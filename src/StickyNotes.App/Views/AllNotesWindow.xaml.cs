@@ -40,6 +40,7 @@ public partial class AllNotesWindow : Window
             }
         };
 
+        Closed += (_, _) => _viewModel.Dispose();
         StateChanged += OnStateChanged;
     }
 

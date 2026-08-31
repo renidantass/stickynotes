@@ -13,4 +13,8 @@ public interface INavigationService
 
     /// <summary>Abre as configurações do app.</summary>
     void OpenSettings();
+
+    /// <summary>Corpo decriptado de uma nota (o deck só carrega metadados; o preview
+    /// busca o corpo sob demanda, igual ao editor).</summary>
+    string GetNoteBody(long noteId);
 }

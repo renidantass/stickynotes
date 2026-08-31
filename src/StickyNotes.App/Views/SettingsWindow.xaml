@@ -22,6 +22,7 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
+        <vm:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <Style TargetType="Button" x:Key="SettingsButtonStyle" BasedOn="{StaticResource FluentButtonStyle}">
             <Setter Property="MinWidth" Value="96"/>
             <Setter Property="MinHeight" Value="32"/>
@@ -113,6 +114,23 @@
                              IsChecked="{Binding DockSideLeft}"/>
                 <RadioButton Content="Direita" Style="{StaticResource OptionChipStyle}"
                              IsChecked="{Binding DockSideRight}"/>
+            </StackPanel>
+
+            <!-- Monitor do deck (só aparece com mais de um monitor) -->
+            <StackPanel Visibility="{Binding HasMultipleMonitors, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Margin="0,0,0,18">
+                <TextBlock Text="Monitor do deck"
+                           FontSize="12.5"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Margin="0,0,0,8"/>
+                <ComboBox ItemsSource="{Binding Monitors}"
+                          SelectedItem="{Binding SelectedMonitor}"
+                          DisplayMemberPath="DisplayName"
+                          FontSize="12.5"
+                          Padding="8,4"
+                          HorizontalAlignment="Left"
+                          MinWidth="240"/>
             </StackPanel>
 
             <!-- Iniciar com o Windows -->

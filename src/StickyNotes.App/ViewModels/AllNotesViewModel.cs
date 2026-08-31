@@ -10,7 +10,7 @@ public enum ArchiveFilter { All, Active, Archived }
 /// <summary>ViewModel da janela "Todas as notas": lista, busca e arquivamento.
 /// As notas são carregadas uma única vez e a busca/filtro operam em memória —
 /// nunca re-consulta o banco a cada tecla digitada.</summary>
-public class AllNotesViewModel : ViewModelBase
+public class AllNotesViewModel : ViewModelBase, IDisposable
 {
     private readonly INoteRepository _repository;
     private readonly NotesCoordinator _coordinator;
@@ -39,10 +39,21 @@ public class AllNotesViewModel : ViewModelBase
         DeleteNoteCommand = new RelayCommand(note => Delete((Note)note!));
 
         // Criação/arquivamento/exclusão vindas de outras janelas atualizam o mural.
-        _coordinator.NotesChanged += (_, _) => Reload();
+        _coordinator.NotesChanged += OnCoordinatorNotesChanged;
 
         Refresh();
     }
+
+    /// <summary>Desassina o coordinator (o mural é aberto/fechado sob demanda; sem
+    /// isso a VM ficaria retida pelo NotesChanged do coordinator, vazando memória
+    /// a cada abertura do mural).</summary>
+    public void Dispose()
+    {
+        _coordinator.NotesChanged -= OnCoordinatorNotesChanged;
+        GC.SuppressFinalize(this);
+    }
+
+    private void OnCoordinatorNotesChanged(object? sender, EventArgs e) => Reload();
 
     public ObservableCollection<Note> Notes { get; } = [];
 

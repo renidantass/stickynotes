@@ -56,7 +56,14 @@ public class NotesCoordinator
 
     public void ToggleArchive(Note note)
     {
-        note.IsArchived = !note.IsArchived;
+        SetArchived(note, !note.IsArchived);
+    }
+
+    /// <summary>Arquiva/desarquiva forçando o estado (não alterna) — usado por
+    /// ações que sabem o estado desejado, como "Arquivar" na janela da nota.</summary>
+    public void SetArchived(Note note, bool archived)
+    {
+        note.IsArchived = archived;
         _repository.Update(note);
         Reload();
     }

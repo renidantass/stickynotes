@@ -22,6 +22,13 @@ var thread = new Thread(() =>
         var vm = new MainViewModel(settings);
         vm.SetServices(coordinator, navigation);
 
+        // 0) Enumeração de monitores (ScreenHelper) funciona
+        var monitors = ScreenHelper.GetMonitors();
+        var resolved = ScreenHelper.Resolve(settings.Load().MonitorDeviceName);
+        Console.WriteLine($"Monitores OK — {monitors.Count} monitor(es): " +
+            string.Join(", ", monitors.Select(m => $"{m.DisplayName} [{m.DeviceName}]")));
+        Console.WriteLine($"Resolve OK — {resolved.DisplayName}, workarea {resolved.WorkArea.Width:F0}x{resolved.WorkArea.Height:F0}");
+
         // 1) Janela do mural abre com o banco real
         var all = new AllNotesWindow(repo, coordinator, navigation, confirmation);
         all.Resources.MergedDictionaries.Add(ThemeManager.Resources);
@@ -58,6 +65,16 @@ var thread = new Thread(() =>
         bool arquivou = coord2.Notes.Count == 1 && coord2.Notes[0].Id == n1.Id;
         Console.WriteLine($"Arquivar OK — deck com {coord2.Notes.Count} nota(s): {arquivou}");
 
+        // 3b) Archive() do editor força arquivamento (bug: antes negava e não arquivava)
+        var n3 = new Note { Title = "C" };
+        n3.Id = repo2.Insert(n3);
+        coord2.Reload();
+        var editor3 = new NoteEditorViewModel(coord2.Notes.First(x => x.Id == n3.Id), coord2);
+        editor3.Archive();
+        bool archiveForcado = repo2.GetAll().First(x => x.Id == n3.Id).IsArchived
+            && coord2.Notes.All(x => x.Id != n3.Id);
+        Console.WriteLine($"Archive() do editor OK — arquivou: {archiveForcado}");
+
         // 4) ConfirmDialog carrega com os dois temas
         foreach (var theme in new[] { ThemeManager.LightResources, ThemeManager.DarkResources })
         {
@@ -70,7 +87,7 @@ var thread = new Thread(() =>
             dialog.Close();
         }
 
-        bool ok = ordemOk && corpoOk && arquivou;
+        bool ok = ordemOk && corpoOk && arquivou && archiveForcado;
         Console.WriteLine(ok ? "SUCESSO" : "FALHA");
 
         try { File.Delete(tmp); } catch { }

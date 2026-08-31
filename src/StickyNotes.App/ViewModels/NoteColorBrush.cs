@@ -16,13 +16,19 @@ public static class NoteColorBrush
         ["orange"] = Color.FromRgb(0xFF, 0xD0, 0x7A),
     };
 
+    // Brushes são caros de criar no WPF; a paleta é fixa (6 cores), então cacheia
+    // os brushes/gradientes já prontos e reutiliza — evita alocação a cada
+    // re-render do deck/mural (hover, digitação, troca de cor).
+    private static readonly Dictionary<string, Brush> BrushCache = new();
+    private static readonly Dictionary<string, LinearGradientBrush> GradientCache = new();
+
     public static Brush Get(string color) =>
-        new SolidColorBrush(Palette.TryGetValue(color, out var c) ? c : Palette[NoteColors.Default]);
+        GetOrAdd(BrushCache, color, static c => new SolidColorBrush(Resolve(c)));
 
     /// <summary>Versão escurecida da cor (canto dobrado da nota, sombras).</summary>
     public static Color Darken(string color, double factor = 0.72)
     {
-        var c = Palette.TryGetValue(color, out var value) ? value : Palette[NoteColors.Default];
+        var c = Resolve(color);
         return Color.FromRgb(
             (byte)(c.R * factor),
             (byte)(c.G * factor),
@@ -31,9 +37,39 @@ public static class NoteColorBrush
 
     /// <summary>Gradiente vertical (topo mais claro, base mais escura) para dar
     /// profundidade de "pilha de post-its" às fatias do deck.</summary>
-    public static LinearGradientBrush GetGradient(string color)
+    public static LinearGradientBrush GetGradient(string color) =>
+        GetOrAdd(GradientCache, color, static c => BuildGradient(Resolve(c)));
+
+    public static string Next(string color)
     {
-        var c = Palette.TryGetValue(color, out var value) ? value : Palette[NoteColors.Default];
+        int index = Array.IndexOf(NoteColors.All, color);
+        return NoteColors.All[(index + 1) % NoteColors.All.Length];
+    }
+
+    private static Color Resolve(string color) =>
+        Palette.TryGetValue(color, out var c) ? c : Palette[NoteColors.Default];
+
+    private static T GetOrAdd<T>(Dictionary<string, T> cache, string color, Func<string, T> factory)
+        where T : class
+    {
+        if (cache.TryGetValue(color, out var existing))
+        {
+            return existing;
+        }
+
+        var created = factory(color);
+        // Congela: o brush é compartilhado e imutável — permite o WPF otimizar o
+        // render (e garante que ninguém o modifique por engano).
+        if (created is System.Windows.Freezable freezable)
+        {
+            freezable.Freeze();
+        }
+        cache[color] = created;
+        return created;
+    }
+
+    private static LinearGradientBrush BuildGradient(Color c)
+    {
         var light = Color.FromRgb(
             (byte)(c.R + (255 - c.R) * 0.18),
             (byte)(c.G + (255 - c.G) * 0.18),
@@ -43,11 +79,5 @@ public static class NoteColorBrush
             (byte)(c.G * 0.82),
             (byte)(c.B * 0.82));
         return new LinearGradientBrush(light, dark, 90);
-    }
-
-    public static string Next(string color)
-    {
-        int index = Array.IndexOf(NoteColors.All, color);
-        return NoteColors.All[(index + 1) % NoteColors.All.Length];
     }
 }

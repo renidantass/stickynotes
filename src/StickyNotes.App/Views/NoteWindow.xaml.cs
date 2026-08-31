@@ -13,13 +13,19 @@ public partial class NoteWindow : Window
     private readonly NoteEditorViewModel _viewModel;
     private readonly IConfirmationService _confirmation;
     private readonly DockSide _dockSide;
+    private readonly Rect _workArea;
     private bool _closing;
 
+    /// <summary>Id da nota aberta nesta janela (para deduplicar aberturas).</summary>
+    public long NoteId { get; }
+
     public NoteWindow(Note note, NotesCoordinator coordinator,
-        IConfirmationService confirmation, DockSide dockSide)
+        IConfirmationService confirmation, DockSide dockSide, Rect workArea)
     {
         _confirmation = confirmation;
         _dockSide = dockSide;
+        _workArea = workArea;
+        NoteId = note.Id;
 
         AppWindowSetup.ApplyTheme(this);
         InitializeComponent();
@@ -47,7 +53,7 @@ public partial class NoteWindow : Window
 
     private void PositionNearDeck()
     {
-        var workArea = SystemParameters.WorkArea;
+        var workArea = _workArea;
         const double deckWidth = 16;
 
         double top = workArea.Top + (workArea.Height - Height) / 2;

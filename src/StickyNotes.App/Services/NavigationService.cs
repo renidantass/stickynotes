@@ -27,7 +27,20 @@ public class NavigationService : INavigationService
     {
         // O deck carrega apenas metadados; o corpo é decriptado sob demanda aqui.
         note.Body = _repository.GetBody(note.Id);
-        var window = new NoteWindow(note, _coordinator, _confirmation, _settingsService.Load().DockSide);
+
+        // Evita múltiplas janelas da mesma nota (cliques repetidos no preview/aba):
+        // ativa a janela existente em vez de abrir outra.
+        var existing = Application.Current.Windows.OfType<NoteWindow>()
+            .FirstOrDefault(w => w.NoteId == note.Id);
+        if (existing is not null)
+        {
+            existing.Activate();
+            return;
+        }
+
+        var settings = _settingsService.Load();
+        var workArea = ScreenHelper.Resolve(settings.MonitorDeviceName).WorkArea;
+        var window = new NoteWindow(note, _coordinator, _confirmation, settings.DockSide, workArea);
         window.Show();
     }
 
@@ -60,6 +73,8 @@ public class NavigationService : INavigationService
         window.Show();
         window.Activate();
     }
+
+    public string GetNoteBody(long noteId) => _repository.GetBody(noteId);
 
     /// <summary>Dispara quando o lado do deck mudou (o App recria o deck na borda).</summary>
     public event EventHandler? DeckSideChanged;

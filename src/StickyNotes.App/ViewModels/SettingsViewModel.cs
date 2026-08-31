@@ -17,6 +17,7 @@ public class SettingsViewModel : ViewModelBase
     private DockSide _dockSide;
     private ThemePreference _themePreference;
     private bool _startWithWindows;
+    private MonitorInfo? _selectedMonitor;
 
     /// <summary>Notifica o app que o lado do deck mudou (recriar/posicionar).</summary>
     public event EventHandler? DeckSideChanged;
@@ -28,6 +29,9 @@ public class SettingsViewModel : ViewModelBase
         _dockSide = _settings.DockSide;
         _themePreference = _settings.ThemePreference;
         _startWithWindows = _settings.StartWithWindows;
+
+        Monitors = ScreenHelper.GetMonitors();
+        _selectedMonitor = ScreenHelper.Resolve(_settings.MonitorDeviceName);
 
         SaveCommand = new RelayCommand(() => Save());
     }
@@ -125,22 +129,38 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _startWithWindows, value);
     }
 
+    /// <summary>Monitores disponíveis (o deck pode ser encostado em qualquer um).</summary>
+    public IReadOnlyList<MonitorInfo> Monitors { get; }
+
+    /// <summary>Verdadeiro quando há mais de um monitor (a seleção só faz sentido aí).</summary>
+    public bool HasMultipleMonitors => Monitors.Count > 1;
+
+    /// <summary>Monitor selecionado para o deck.</summary>
+    public MonitorInfo? SelectedMonitor
+    {
+        get => _selectedMonitor;
+        set => SetProperty(ref _selectedMonitor, value);
+    }
+
     public RelayCommand SaveCommand { get; }
 
     private void Save()
     {
-        // Lado antigo ANTES de salvar (o Save atualiza o cache do service).
-        var oldDockSide = _settingsService.Load().DockSide;
+        // Valores antigos ANTES de salvar (o Save atualiza o cache do service).
+        var oldSettings = _settingsService.Load();
+        var oldDockSide = oldSettings.DockSide;
+        var oldMonitor = oldSettings.MonitorDeviceName;
 
         _settings.DockSide = _dockSide;
         _settings.ThemePreference = _themePreference;
         _settings.StartWithWindows = _startWithWindows;
+        _settings.MonitorDeviceName = _selectedMonitor?.DeviceName ?? "";
         _settingsService.Save(_settings);
 
-        // Aplica em runtime: tema imediato; lado do deck notifica o App para recriar.
+        // Aplica em runtime: tema imediato; deck re-posicionado se lado/monitor mudou.
         ThemeManager.ApplyPreference(_themePreference);
         ApplyStartWithWindows();
-        if (_dockSide != oldDockSide)
+        if (_dockSide != oldDockSide || _settings.MonitorDeviceName != oldMonitor)
         {
             DeckSideChanged?.Invoke(this, EventArgs.Empty);
         }

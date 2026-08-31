@@ -61,7 +61,10 @@ public partial class NotePreviewWindow : Window
 
     private void OnPreviewClick(object sender, MouseButtonEventArgs e)
     {
-        // Clique no preview abre a nota para edição
+        // Clique no preview abre a nota para edição; fecha o preview para o
+        // segundo clique de um duplo clique não abrir de novo (o OpenNote já
+        // deduplica, mas fechar evita o flicker).
         _navigation.OpenNote(_note);
+        Close();
     }
 }

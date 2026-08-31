@@ -68,6 +68,7 @@ public partial class App : Application
         _deckWindow = new DeckWindow(_mainViewModel!)
         {
             DockSide = _mainViewModel!.DockSide,
+            WorkArea = ScreenHelper.Resolve(_mainViewModel.SettingsService.Load().MonitorDeviceName).WorkArea,
         };
         _deckWindow.Show();
     }

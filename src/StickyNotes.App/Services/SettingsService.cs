@@ -14,6 +14,10 @@ public class Settings
     public DockSide DockSide { get; set; } = DockSide.Right;
     public ThemePreference ThemePreference { get; set; } = ThemePreference.System;
     public bool StartWithWindows { get; set; }
+
+    /// <summary>DeviceName do monitor onde o deck fica encostado (ex. "\\.\DISPLAY1").
+    /// Vazio = monitor primário.</summary>
+    public string MonitorDeviceName { get; set; } = "";
 }
 
 public class SettingsService

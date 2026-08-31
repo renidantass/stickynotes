@@ -22,6 +22,7 @@ public partial class DeckWindow : Window
     private const double PreviewDelayMs = 300;
     private const double PreviewWidth = 280;
     private const double PreviewGap = 6;
+    private const double IdleCheckIntervalMs = 120;
     private const int ToggleDeckHotkeyId = 0xA1;
 
     // Ctrl+Alt+S: alterna o deck
@@ -31,6 +32,8 @@ public partial class DeckWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly DispatcherTimer _hoverTimer;
     private readonly DispatcherTimer _previewTimer;
+    private readonly DispatcherTimer _idleCheckTimer;
+    private int _idleCheckMisses;
     private bool _mouseOverDeck;
     private bool _mouseOverPreview;
     private NotePreviewWindow? _previewWindow;
@@ -84,11 +87,20 @@ public partial class DeckWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
 
+        // Fallback: monitor primário (o App sobrescreve com o monitor configurado).
+        WorkArea = SystemParameters.WorkArea;
+
         _hoverTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HoverDelayMs) };
         _hoverTimer.Tick += OnHoverTimerTick;
 
         _previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(PreviewDelayMs) };
         _previewTimer.Tick += OnPreviewTimerTick;
+
+        // Vigia o cursor enquanto o deck está expandido: o MouseLeave do WPF pode
+        // ser engolido pela animação de resize (bater no canto e sair rápido), então
+        // um check periódico da posição real do cursor garante o recolhimento.
+        _idleCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(IdleCheckIntervalMs) };
+        _idleCheckTimer.Tick += OnIdleCheckTimerTick;
 
         // As notas chegam em background (startup rápido): re-mede quando chegarem.
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -131,6 +143,10 @@ public partial class DeckWindow : Window
 
     public DockSide DockSide { get; set; } = DockSide.Right;
 
+    /// <summary>Área de trabalho (DIPs) do monitor onde o deck fica encostado.
+    /// Preenchida pelo App com base na preferência de monitor das settings.</summary>
+    public Rect WorkArea { get; set; }
+
     private void OnDeckLoaded(object sender, RoutedEventArgs e)
     {
         // Mede a altura real do menu DEPOIS do Loaded: bindings aplicados e layout pronto.
@@ -148,7 +164,7 @@ public partial class DeckWindow : Window
         HwndSource.FromHwnd(handle)?.AddHook(WndProc);
 
         // Posicionamento inicial mínimo (a altura real é aplicada no Loaded).
-        var workArea = SystemParameters.WorkArea;
+        var workArea = WorkArea;
         Width = CollapsedWidth;
         Height = _expandedHeight;
         CenterVertically();
@@ -260,7 +276,7 @@ public partial class DeckWindow : Window
 
     private void PositionOnEdge()
     {
-        var workArea = SystemParameters.WorkArea;
+        var workArea = WorkArea;
 
         // A largura atual da janela (pill ou expandida) é preservada; apenas
         // re-centraliza verticalmente e gruda na borda correta.
@@ -297,7 +313,7 @@ public partial class DeckWindow : Window
     /// <summary>Centraliza verticalmente a janela (pill ou menu) na área de trabalho.</summary>
     private void CenterVertically()
     {
-        var workArea = SystemParameters.WorkArea;
+        var workArea = WorkArea;
         Top = workArea.Top + (workArea.Height - Height) / 2;
     }
 
@@ -343,6 +359,29 @@ public partial class DeckWindow : Window
         if (_mouseOverDeck && _viewModel.NoteCount > 0)
         {
             Expand();
+        }
+    }
+
+    /// <summary>Re-sincroniza o estado com a posição real do cursor enquanto o deck
+    /// está expandido. Cobre MouseLeave perdido durante a animação de resize:
+    /// exige 2 ticks consecutivos com o cursor fora para recolher (evita flutuação
+    /// na borda enquanto a janela anima a largura). Usa as bounds exatas do deck e
+    /// do preview (que pode ser reposicionado para caber na tela).</summary>
+    private void OnIdleCheckTimerTick(object? sender, EventArgs e)
+    {
+        bool overDeck = IsMouseOverDeckOnlyArea() || IsMouseOverPreviewArea();
+        _mouseOverDeck = overDeck;
+
+        if (!overDeck)
+        {
+            if (++_idleCheckMisses >= 2)
+            {
+                Collapse(); // para o próprio timer no Collapse
+            }
+        }
+        else
+        {
+            _idleCheckMisses = 0;
         }
     }
 
@@ -439,9 +478,19 @@ public partial class DeckWindow : Window
     private void OnNoteTabMouseLeave(object sender, MouseEventArgs e)
     {
         _previewTimer.Stop();
-        ClosePreview();
         _previewNote = null;
         _previewTab = null;
+
+        // O mouse pode estar migrando para o preview (atravessando o gap entre
+        // o deck e ele): só fecha o preview se ele realmente saiu da área
+        // (deck + preview) — senão o preview some antes de o mouse alcançá-lo.
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+        {
+            if (!_mouseOverDeck && !_mouseOverPreview && !IsMouseOverDeckArea())
+            {
+                ClosePreview();
+            }
+        });
     }
 
     private void OnPreviewTimerTick(object? sender, EventArgs e)
@@ -457,6 +506,10 @@ public partial class DeckWindow : Window
     {
         ClosePreview();
 
+        // O deck carrega só metadados; busca o corpo decriptado sob demanda
+        // (mesmo caminho do editor) para o preview mostrar o conteúdo.
+        note.Body = _viewModel.Navigation.GetNoteBody(note.Id);
+
         // Re-captura a posição atual da aba no momento de abrir (o deck pode ter
         // sido re-medido/re-posicionado entre o hover e o timer de 300ms).
         if (_previewTab is FrameworkElement tab && tab.DataContext == note)
@@ -466,7 +519,7 @@ public partial class DeckWindow : Window
 
         // Posiciona ao lado do deck, com o topo alinhado ao topo da aba hoverada.
         // Se não couber na tela, desloca o mínimo necessário (preview de 240px máx.).
-        var workArea = SystemParameters.WorkArea;
+        var workArea = WorkArea;
         double x = DockSide == DockSide.Right
             ? Left - PreviewWidth - PreviewGap
             : Left + ActualWidth + PreviewGap;
@@ -496,10 +549,45 @@ public partial class DeckWindow : Window
     {
         _mouseOverPreview = false;
         _previewTimer.Stop();
-        if (!IsMouseOverDeckArea())
+
+        // O MouseLeave do Window dispara com o cursor ainda na borda (a bounds do
+        // deck inclui a área do preview), então o check único nunca vê o mouse
+        // "fora" e o preview não fecha. Posterga o check para o cursor já ter
+        // saído de verdade — mesmo padrão do OnMouseLeave do deck.
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
         {
-            Collapse();
+            if (_mouseOverPreview || IsMouseOverPreviewArea())
+            {
+                return; // voltou para dentro do preview
+            }
+
+            ClosePreview();
+
+            // Depois do ClosePreview, IsMouseOverDeckArea() mede só o deck
+            // (o preview já foi removido da área extra).
+            if (!_mouseOverDeck && !IsMouseOverDeckArea())
+            {
+                Collapse();
+            }
+        });
+    }
+
+    /// <summary>True se o cursor está sobre a janela do preview (não conta o deck).</summary>
+    private bool IsMouseOverPreviewArea()
+    {
+        if (_previewWindow is null)
+        {
+            return false;
         }
+
+        var cursor = GetCursorPositionInDips();
+        if (cursor.X < 0)
+        {
+            return false;
+        }
+
+        return new Rect(_previewWindow.Left, _previewWindow.Top,
+            _previewWindow.ActualWidth, _previewWindow.ActualHeight).Contains(cursor);
     }
 
     private void OnPreviewClosed(object? sender, EventArgs e)
@@ -549,6 +637,8 @@ public partial class DeckWindow : Window
         NoteCountBadge.Visibility = Visibility.Collapsed;
         EmptyIndicator.Visibility = Visibility.Collapsed;
 
+        _idleCheckTimer.Start();
+        _idleCheckMisses = 0;
         AnimateWidth(ExpandedWidth);
     }
 
@@ -561,6 +651,7 @@ public partial class DeckWindow : Window
 
         _viewModel.IsExpanded = false;
         _previewTimer.Stop();
+        _idleCheckTimer.Stop();
         ClosePreview();
         _previewNote = null;
 
@@ -577,8 +668,8 @@ public partial class DeckWindow : Window
     {
         bool dockRight = DockSide == DockSide.Right;
         double edge = dockRight
-            ? SystemParameters.WorkArea.Right - targetWidth
-            : SystemParameters.WorkArea.Left;
+            ? WorkArea.Right - targetWidth
+            : WorkArea.Left;
 
         var widthAnim = new DoubleAnimation(targetWidth, TimeSpan.FromMilliseconds(160))
         {
@@ -609,5 +700,17 @@ public partial class DeckWindow : Window
             ? new Rect(Left - extra, Top, ActualWidth + extra, ActualHeight)
             : new Rect(Left, Top, ActualWidth + extra, ActualHeight);
         return bounds.Contains(cursor);
+    }
+
+    /// <summary>True se o cursor está sobre a janela do deck (sem a área do preview).</summary>
+    private bool IsMouseOverDeckOnlyArea()
+    {
+        var cursor = GetCursorPositionInDips();
+        if (cursor.X < 0)
+        {
+            return false;
+        }
+
+        return new Rect(Left, Top, ActualWidth, ActualHeight).Contains(cursor);
     }
 }

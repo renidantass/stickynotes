@@ -88,8 +88,7 @@ public class NoteEditorViewModel : ViewModelBase
     /// <summary>Arquiva a nota (torna inativa e a remove do deck).</summary>
     public void Archive()
     {
-        _note.IsArchived = true;
-        _coordinator.ToggleArchive(_note);
+        _coordinator.SetArchived(_note, archived: true);
     }
 
     public void Delete()

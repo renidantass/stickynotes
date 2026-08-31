@@ -62,15 +62,14 @@
                                Foreground="{DynamicResource NoteTextPrimaryBrush}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
-                <TextBox x:Name="BodyText"
-                         Grid.Row="1"
-                         IsReadOnly="True"
-                         TextWrapping="Wrap"
-                         FontSize="12"
-                         Foreground="{DynamicResource NoteTextPrimaryBrush}"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         VerticalScrollBarVisibility="Auto"/>
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <TextBlock x:Name="BodyText"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Foreground="{DynamicResource NoteTextPrimaryBrush}"/>
+                </ScrollViewer>
                 <TextBlock Grid.Row="1"
                            Text="Clique para editar"
                            FontSize="10"
