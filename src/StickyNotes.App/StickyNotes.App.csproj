@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>StickyNotes</AssemblyName>
+    <RootNamespace>StickyNotes</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\StickyNotes.ico</ApplicationIcon>
+    <!-- Startup rápido em Release: AOT parcial (ReadyToRun) + PGO tiered.
+         WPF não suporta trimming/single-file, então só R2R + PGO. -->
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
+    <TieredPgo Condition="'$(Configuration)' == 'Release'">true</TieredPgo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\StickyNotes.ico" />
+    <Resource Include="Resources\StickyNotes.ico" />
+  </ItemGroup>
+
+</Project>

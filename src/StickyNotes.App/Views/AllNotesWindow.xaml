@@ -1,0 +1,447 @@
+<Window x:Class="StickyNotes.Views.AllNotesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:StickyNotes.ViewModels"
+        Title="Notas"
+        Icon="../Resources/StickyNotes.ico"
+        Width="860" Height="600"
+        MinWidth="680" MinHeight="440"
+        Topmost="True"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        WindowChrome.WindowChrome="{StaticResource ModernChrome}">
+
+    <Window.Resources>
+        <vm:NoteGradientConverter x:Key="NoteGradientConverter"/>
+        <vm:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+        <vm:ArchiveStateConverter x:Key="ArchiveStateConverter"/>
+        <vm:ArchiveActionTooltipConverter x:Key="ArchiveActionTooltipConverter"/>
+        <vm:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
+
+        <!-- Estilo de chip de filtro (consistente com o deck) -->
+        <Style TargetType="RadioButton" x:Key="FilterChipStyle">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Chip"
+                                Background="Transparent"
+                                BorderBrush="{DynamicResource ControlStrokeBrush}"
+                                BorderThickness="1"
+                                CornerRadius="14"
+                                Padding="12,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chip" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chip" Property="Background" Value="{DynamicResource ControlFillHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo de botão de ação do mural (consistente com DeckActionButtonStyle) -->
+        <Style TargetType="Button" x:Key="WallActionButtonStyle">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ControlFillHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ControlFillPressedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource FocusRingBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botões de caption (minimizar/maximizar): hover sutil, largura padrão Win11 de 46px -->
+        <Style TargetType="Button" x:Key="CaptionButtonStyle">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ControlFillHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ControlFillPressedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botão de fechar: hover vermelho no padrão do Windows 11 -->
+        <Style TargetType="Button" x:Key="CaptionCloseButtonStyle">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#C42B1C"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#B03A24"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource WallBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Titlebar custom estilo Windows 11: arrastar, título, contagem e botões de caption -->
+        <Grid Grid.Row="0" Height="40">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="16,0,0,0">
+                <TextBlock Text="🗒"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           IsHitTestVisible="False"/>
+                <TextBlock Text="Notas"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <TextBlock x:Name="CountText"
+                       Grid.Column="1"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"
+                       IsHitTestVisible="False"/>
+
+            <!-- Botões de caption (minimizar / maximizar / fechar) no padrão Win11.
+                 IsHitTestVisibleInChrome=True: sem isso o WindowChrome trata a área
+                 como região de arrastar e engole o clique dos botões. -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                        WindowChrome.IsHitTestVisibleInChrome="True">
+                <Button x:Name="MinimizeButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        ToolTip="Minimizar"
+                        Click="OnMinimizeClick">
+                    <TextBlock Text="&#xE921;" FontFamily="Segoe Fluent Icons" FontSize="10"/>
+                </Button>
+                <Button x:Name="MaximizeButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        ToolTip="Maximizar"
+                        Click="OnMaximizeClick">
+                    <TextBlock Text="&#xE922;" FontFamily="Segoe Fluent Icons" FontSize="10"/>
+                </Button>
+                <Button Style="{StaticResource CaptionCloseButtonStyle}"
+                        ToolTip="Fechar"
+                        Click="OnCloseClick">
+                    <TextBlock Text="&#xE8BB;" FontFamily="Segoe Fluent Icons" FontSize="10"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Busca + filtros + nova nota -->
+        <Grid Grid.Row="1" Margin="20,4,20,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource SurfaceAltBrush}"
+                    CornerRadius="8"
+                    BorderBrush="{DynamicResource ControlStrokeBrush}"
+                    BorderThickness="1"
+                    Padding="12,0"
+                    Margin="0,0,12,0">
+                <Grid>
+                    <TextBlock Text="🔍"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"
+                               IsHitTestVisible="False"/>
+                    <TextBlock Text="Buscar notas..."
+                               FontSize="13"
+                               Foreground="{DynamicResource EmptyStateBrush}"
+                               VerticalAlignment="Center"
+                               Margin="22,0,0,0"
+                               IsHitTestVisible="False">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchText}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             FontSize="13"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             CaretBrush="{DynamicResource TextPrimaryBrush}"
+                             VerticalContentAlignment="Center"
+                             VerticalAlignment="Stretch"
+                             Padding="0,0,4,0"/>
+                </Grid>
+            </Border>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <RadioButton Content="Todas" Style="{StaticResource FilterChipStyle}"
+                             IsChecked="{Binding Filter, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=All}"/>
+                <RadioButton Content="Ativas" Style="{StaticResource FilterChipStyle}"
+                             IsChecked="{Binding Filter, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Active}"/>
+                <RadioButton Content="Arquivadas" Style="{StaticResource FilterChipStyle}"
+                             IsChecked="{Binding Filter, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Archived}"/>
+            </StackPanel>
+            <Button Grid.Column="2" Content="+ Nova nota" Command="{Binding CreateNoteCommand}"
+                    Style="{StaticResource WallActionButtonStyle}"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource TextOnAccentBrush}"
+                    BorderBrush="{DynamicResource AccentBrush}"/>
+        </Grid>
+
+        <!-- Mural de notas -->
+        <Grid Grid.Row="3" Margin="12,0,12,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="NotesWall"
+                              ItemsSource="{Binding Notes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <!-- Post-it: fita + canto dobrado + menu de contexto no hover -->
+                            <Border x:Name="StickyShadow"
+                                    Width="190" Height="190"
+                                    Margin="8"
+                                    Background="#24000000"
+                                    CornerRadius="3"
+                                    Opacity="0"
+                                    Loaded="OnStickyLoaded">
+                                <Grid>
+                                    <Border x:Name="Sticky"
+                                            CornerRadius="2"
+                                            BorderBrush="#22000000"
+                                            BorderThickness="1"
+                                            Margin="0,0,3,3"
+                                            Cursor="Hand"
+                                            RenderTransformOrigin="0.5,0.5"
+                                            MouseLeftButtonUp="OnStickyClick">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                        </Border.RenderTransform>
+                                        <Border.Background>
+                                            <Binding Path="Color" Converter="{StaticResource NoteGradientConverter}"/>
+                                        </Border.Background>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Fita -->
+                                            <Border Width="70" Height="18"
+                                                    CornerRadius="2"
+                                                    Background="{DynamicResource TapeBrush}"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Top"
+                                                    Margin="0,-9,0,0"
+                                                    IsHitTestVisible="False"/>
+
+                                            <!-- Título -->
+                                            <TextBlock Grid.Row="0"
+                                                       Text="{Binding Title}"
+                                                       FontSize="13.5"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource NoteTextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="12,12,12,4"/>
+
+                                            <!-- Corpo (recorte) -->
+                                            <TextBlock Grid.Row="1"
+                                                       Text="{Binding Body}"
+                                                       FontSize="11.5"
+                                                       Foreground="{DynamicResource NoteTextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxHeight="90"
+                                                       Margin="12,0,12,0"/>
+
+                                            <!-- Rodapé: estado + data -->
+                                            <StackPanel Grid.Row="2"
+                                                        Orientation="Horizontal"
+                                                        Margin="12,4,12,10">
+                                                <TextBlock Text="{Binding IsArchived, Converter={StaticResource ArchiveStateConverter}}"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource NoteTextSecondaryBrush}"/>
+                                                <TextBlock Text=" · "
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource NoteTextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding UpdatedAt, StringFormat={}{0:dd/MM}}"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource NoteTextSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Ações rápidas no hover do post-it: mais claras
+                                         que os botões da barra — ação direta na nota -->
+                                    <Border x:Name="QuickActions"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="0,2,8,0"
+                                            Background="#CC000000"
+                                            CornerRadius="6"
+                                            Padding="2"
+                                            Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Command="{Binding DataContext.OpenNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" BorderThickness="0"
+                                                    Foreground="White" Padding="4,2" Cursor="Hand"
+                                                    ToolTip="Abrir">
+                                                <TextBlock Text="✎" FontSize="11"/>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.ArchiveNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" BorderThickness="0"
+                                                    Foreground="White" Padding="4,2" Cursor="Hand"
+                                                    ToolTip="{Binding IsArchived, Converter={StaticResource ArchiveActionTooltipConverter}}">
+                                                <TextBlock Text="📁" FontSize="11"/>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" BorderThickness="0"
+                                                    Foreground="#FF99A4" Padding="4,2" Cursor="Hand"
+                                                    ToolTip="Excluir">
+                                                <TextBlock Text="🗑" FontSize="11"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Sticky" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <ScaleTransform ScaleX="1.04" ScaleY="1.04"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter TargetName="QuickActions" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="False">
+                                    <Setter TargetName="QuickActions" Property="Visibility" Value="Collapsed"/>
+                                </Trigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Estado vazio: nenhuma nota visível -->
+            <StackPanel x:Name="EmptyState"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsHitTestVisible="False"
+                        Visibility="{Binding HasNotes, Converter={StaticResource InverseBoolToVis}}">
+                <TextBlock Text="📝"
+                           FontSize="32"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,12"/>
+                <TextBlock Text="Nenhuma nota por aqui"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Crie sua primeira nota para começar"
+                           FontSize="12"
+                           Foreground="{DynamicResource EmptyStateBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
