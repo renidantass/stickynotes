@@ -89,15 +89,21 @@
             </Grid>
 
             <!-- Estado expandido: abas verticais com gradiente (mesma linguagem da pill) -->
-            <StackPanel x:Name="MenuPanel"
-                        Visibility="Collapsed"
-                        Margin="3,6,3,12"
-                        HorizontalAlignment="Center">
+            <Grid x:Name="MenuPanel"
+                  Visibility="Collapsed"
+                  Margin="3,6,3,12"
+                  HorizontalAlignment="Center">
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              MaxHeight="460"
-                              VerticalAlignment="Top"
-                              HorizontalScrollBarVisibility="Disabled">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ScrollViewer x:Name="TabsScrollViewer"
+                              Grid.Row="0"
+                              VerticalScrollBarVisibility="Hidden"
+                              HorizontalScrollBarVisibility="Disabled"
+                              ScrollChanged="OnTabsScrollChanged">
                     <ItemsControl x:Name="NotesItemsControl" ItemsSource="{Binding Notes}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -140,56 +146,87 @@
                     </ItemsControl>
                 </ScrollViewer>
 
-                <Button Command="{Binding CreateNoteCommand}"
-                        Style="{StaticResource DeckActionButtonStyle}"
-                        Width="52" MinHeight="34"
-                        Margin="0,8,0,0"
-                        ToolTip="Nova nota">
-                    <TextBlock Text="+"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               FontSize="16"
-                               FontWeight="Bold"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Button>
+                <!-- Indicadores de scroll: setas sobre o viewport quando há mais
+                     abas acima/abaixo do que cabe no deck (muitas notas) -->
+                <Border x:Name="ScrollUpIndicator"
+                        Grid.Row="0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Top"
+                        Margin="0,2,0,0"
+                        Background="#B3000000"
+                        CornerRadius="8"
+                        Padding="5,1"
+                        IsHitTestVisible="False"
+                        Visibility="Collapsed">
+                    <TextBlock Text="▲" FontSize="8" Foreground="White"/>
+                </Border>
+                <Border x:Name="ScrollDownIndicator"
+                        Grid.Row="0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,2"
+                        Background="#B3000000"
+                        CornerRadius="8"
+                        Padding="5,1"
+                        IsHitTestVisible="False"
+                        Visibility="Collapsed">
+                    <TextBlock Text="▼" FontSize="8" Foreground="White"/>
+                </Border>
 
-                <Button Command="{Binding OpenAllNotesCommand}"
-                        Style="{StaticResource DeckActionButtonStyle}"
-                        Width="52" MinHeight="34"
-                        Margin="0,3,0,0"
-                        ToolTip="Todas as notas">
-                    <TextBlock Text="▤"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               FontSize="13"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Button>
+                <!-- Ações fixas: sempre visíveis abaixo das abas (não somem com muitas notas) -->
+                <StackPanel Grid.Row="1" Orientation="Vertical">
 
-                <Button Command="{Binding OpenSettingsCommand}"
-                        Style="{StaticResource DeckActionButtonStyle}"
-                        Width="52" MinHeight="34"
-                        Margin="0,3,0,0"
-                        ToolTip="Configurações">
-                    <TextBlock Text="⚙"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               FontSize="13"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Button>
+                    <Button Command="{Binding CreateNoteCommand}"
+                            Style="{StaticResource DeckActionButtonStyle}"
+                            Width="52" MinHeight="34"
+                            Margin="0,8,0,0"
+                            ToolTip="Nova nota">
+                        <TextBlock Text="+"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Button>
 
-                <Button Command="{Binding ExitCommand}"
-                        Style="{StaticResource DeckActionButtonStyle}"
-                        Width="52" MinHeight="34"
-                        Margin="0,8,0,0"
-                        ToolTip="Sair do StickyNotes">
-                    <TextBlock Text="✕"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               FontSize="13"
-                               FontWeight="Bold"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Button>
-            </StackPanel>
+                    <Button Command="{Binding OpenAllNotesCommand}"
+                            Style="{StaticResource DeckActionButtonStyle}"
+                            Width="52" MinHeight="34"
+                            Margin="0,3,0,0"
+                            ToolTip="Todas as notas">
+                        <TextBlock Text="▤"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontSize="13"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Button Command="{Binding OpenSettingsCommand}"
+                            Style="{StaticResource DeckActionButtonStyle}"
+                            Width="52" MinHeight="34"
+                            Margin="0,3,0,0"
+                            ToolTip="Configurações">
+                        <TextBlock Text="⚙"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontSize="13"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Button Command="{Binding ExitCommand}"
+                            Style="{StaticResource DeckActionButtonStyle}"
+                            Width="52" MinHeight="34"
+                            Margin="0,8,0,0"
+                            ToolTip="Sair do StickyNotes">
+                        <TextBlock Text="✕"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </Window>

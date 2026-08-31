@@ -31,13 +31,27 @@ public class NotesCoordinator
         NotesChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Cria uma nota nova, recarrega e retorna a instância para abrir.</summary>
+    /// <summary>Cria uma nota nova com cor sorteada, recarrega e retorna a instância para abrir.</summary>
     public Note Create()
     {
-        var note = new Note { Title = "Nova nota", Color = NoteColors.Default };
+        var note = new Note { Title = "Nova nota", Color = NextColor() };
         note.Id = _repository.Insert(note);
         Reload();
         return note;
+    }
+
+    /// <summary>Sorteia uma cor da paleta; se cair na mesma da nota mais recente,
+    /// avança para a próxima — a cor muda sempre que o usuário cria uma nota.</summary>
+    private string NextColor()
+    {
+        string[] palette = NoteColors.All;
+        string color = palette[Random.Shared.Next(palette.Length)];
+        if (_notes.Count > 0 && color == _notes[0].Color)
+        {
+            color = palette[(Array.IndexOf(palette, color) + 1) % palette.Length];
+        }
+
+        return color;
     }
 
     public void Save(Note note)

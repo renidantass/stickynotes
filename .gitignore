@@ -8,6 +8,10 @@ obj/
 *.userosscache
 *.sln.docstates
 
+# Pasta de teste de publish local (não versionar)
+publish-fd-test/
+publish/
+
 # Pacotes NuGet locais (restaurados, não versionar)
 *.nupkg
 *.snupkg

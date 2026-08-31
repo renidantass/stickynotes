@@ -12,8 +12,8 @@ namespace StickyNotes.Views;
 /// Um clique abre a nota para edição.</summary>
 public partial class NotePreviewWindow : Window
 {
-    private readonly Note _note;
-    private readonly INavigationService _navigation;
+    private Note _note;
+    private INavigationService _navigation;
 
     public NotePreviewWindow(Note note, INavigationService navigation, Point position, double maxHeight)
     {
@@ -51,6 +51,17 @@ public partial class NotePreviewWindow : Window
         Background = brush; // o fundo da janela cobre a área do chrome (cantos recortados)
         TapeBorder.Background = new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF));
         FoldPath.Fill = new SolidColorBrush(NoteColorBrush.Darken(color));
+    }
+
+    /// <summary>Atualiza o conteúdo da janela para outra nota (sem recriar a janela) —
+    /// usado quando o hover muda de aba com o preview já aberto, evitando flicker.</summary>
+    public void Refresh(Note note, INavigationService navigation)
+    {
+        _note = note;
+        _navigation = navigation;
+        TitleText.Text = note.Title;
+        BodyText.Text = note.Body;
+        ApplyColor(note.Color);
     }
 
     protected override void OnSourceInitialized(EventArgs e)

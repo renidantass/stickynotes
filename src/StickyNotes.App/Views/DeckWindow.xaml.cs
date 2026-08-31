@@ -39,7 +39,6 @@ public partial class DeckWindow : Window
     private NotePreviewWindow? _previewWindow;
     private Note? _previewNote;
     private FrameworkElement? _previewTab;
-    private double _previewTabY;
     private double _expandedHeight = CollapsedHeight;
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -127,10 +126,17 @@ public partial class DeckWindow : Window
 
     private void Remeasure()
     {
+        // Mede o menu com a altura máxima como constraint: as abas rolam (row *)
+        // e os botões fixos (row Auto) nunca são cortados quando há muitas notas.
+        // Preserva a visibilidade atual — nunca esconde o menu se já expandido.
+        bool wasVisible = MenuPanel.Visibility == Visibility.Visible;
         MenuPanel.Visibility = Visibility.Visible;
-        MenuPanel.Measure(new Size(ExpandedWidth, double.PositiveInfinity));
+        MenuPanel.Measure(new Size(ExpandedWidth, MaxMenuHeight));
         double measured = MenuPanel.DesiredSize.Height + MenuPanel.Margin.Top + MenuPanel.Margin.Bottom;
-        MenuPanel.Visibility = Visibility.Collapsed;
+        if (!wasVisible)
+        {
+            MenuPanel.Visibility = Visibility.Collapsed;
+        }
 
         if (measured <= 0)
         {
@@ -139,6 +145,7 @@ public partial class DeckWindow : Window
 
         _expandedHeight = Math.Clamp(measured, CollapsedHeight, MaxMenuHeight);
         PositionOnEdge();
+        UpdateScrollIndicators();
     }
 
     public DockSide DockSide { get; set; } = DockSide.Right;
@@ -411,17 +418,8 @@ public partial class DeckWindow : Window
             _previewNote = note;
             _previewTab = tab;
 
-            // Garante que a aba hoverada está visível no viewport do deck
-            // (com muitas notas o menu rola) antes de capturar a posição.
-            ScrollTabIntoView(tab);
-            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
-            {
-                if (_previewNote == note)
-                {
-                    _previewTabY = GetTabScreenTop(tab);
-                }
-            });
-
+            // O preview abre após o delay; a ancoragem real é calculada no
+            // ShowPreview (posição mais confiável) e atualizada no scroll.
             _previewTimer.Stop();
             _previewTimer.Start();
         }
@@ -434,45 +432,6 @@ public partial class DeckWindow : Window
     {
         var offset = tab.TransformToAncestor(this).Transform(new Point(0, 0));
         return Top + offset.Y;
-    }
-
-    /// <summary>Rola o ScrollViewer do menu para que a aba hoverada fique visível.</summary>
-    private static void ScrollTabIntoView(FrameworkElement tab)
-    {
-        var scroll = FindAncestor<ScrollViewer>(tab);
-        if (scroll is null)
-        {
-            return;
-        }
-
-        var transform = tab.TransformToAncestor(scroll);
-        var offset = transform.Transform(new Point(0, 0));
-        double viewport = scroll.ViewportHeight;
-        double top = offset.Y;
-        double bottom = offset.Y + tab.ActualHeight;
-
-        if (top < 0)
-        {
-            scroll.ScrollToVerticalOffset(scroll.VerticalOffset + top);
-        }
-        else if (bottom > viewport)
-        {
-            scroll.ScrollToVerticalOffset(scroll.VerticalOffset + (bottom - viewport));
-        }
-    }
-
-    private static T? FindAncestor<T>(DependencyObject child) where T : DependencyObject
-    {
-        var current = VisualTreeHelper.GetParent(child);
-        while (current is not null)
-        {
-            if (current is T match)
-            {
-                return match;
-            }
-            current = VisualTreeHelper.GetParent(current);
-        }
-        return null;
     }
 
     private void OnNoteTabMouseLeave(object sender, MouseEventArgs e)
@@ -493,6 +452,53 @@ public partial class DeckWindow : Window
         });
     }
 
+    /// <summary>Re-ancora o preview na aba hoverada quando o usuário rola as abas:
+    /// o preview acompanha a aba em tempo real (em vez de ficar numa posição velha).
+    /// Se a aba sair do viewport, o preview é fechado. Também atualiza as setas ↑/↓.</summary>
+    private void OnTabsScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        UpdateScrollIndicators();
+        if (_previewWindow is null || _previewTab is not FrameworkElement tab || tab.DataContext != _previewNote)
+        {
+            return;
+        }
+
+        if (IsTabFullyScrolledOut(tab))
+        {
+            // A aba hoverada não está mais visível: preview não faz sentido.
+            ClosePreview();
+            return;
+        }
+
+        UpdatePreviewPosition(tab);
+    }
+
+    /// <summary>True se a aba está totalmente fora do viewport do deck (rolada
+    /// para fora) — o preview deve fechar em vez de flutuar desconectado.</summary>
+    private bool IsTabFullyScrolledOut(FrameworkElement tab)
+    {
+        var tabTop = GetTabScreenTop(tab);
+        var tabBottom = tabTop + tab.ActualHeight;
+        var viewportTop = Top + (TabsScrollViewer.TransformToAncestor(this).Transform(new Point(0, 0)).Y);
+        var viewportBottom = viewportTop + TabsScrollViewer.ViewportHeight;
+        return tabBottom <= viewportTop || tabTop >= viewportBottom;
+    }
+
+    /// <summary>Mostra as setas ↑/↓ quando há abas fora do viewport do deck
+    /// (muitas notas): sinaliza visualmente que a lista rola.</summary>
+    private void UpdateScrollIndicators()
+    {
+        if (TabsScrollViewer is null)
+        {
+            return;
+        }
+
+        bool canScrollUp = TabsScrollViewer.VerticalOffset > 0.5;
+        bool canScrollDown = TabsScrollViewer.VerticalOffset < TabsScrollViewer.ScrollableHeight - 0.5;
+        ScrollUpIndicator.Visibility = canScrollUp ? Visibility.Visible : Visibility.Collapsed;
+        ScrollDownIndicator.Visibility = canScrollDown ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void OnPreviewTimerTick(object? sender, EventArgs e)
     {
         _previewTimer.Stop();
@@ -504,40 +510,79 @@ public partial class DeckWindow : Window
 
     private void ShowPreview(Note note)
     {
-        ClosePreview();
-
         // O deck carrega só metadados; busca o corpo decriptado sob demanda
         // (mesmo caminho do editor) para o preview mostrar o conteúdo.
         note.Body = _viewModel.Navigation.GetNoteBody(note.Id);
 
-        // Re-captura a posição atual da aba no momento de abrir (o deck pode ter
-        // sido re-medido/re-posicionado entre o hover e o timer de 300ms).
-        if (_previewTab is FrameworkElement tab && tab.DataContext == note)
+        // Reutiliza a janela já aberta (troca de conteúdo sem fechar/reabrir —
+        // evita flicker ao passar rapidamente por várias abas).
+        if (_previewWindow is not null && _previewNote == note)
         {
-            _previewTabY = GetTabScreenTop(tab);
+            _previewWindow.Refresh(note, _viewModel.Navigation);
+            if (_previewTab is FrameworkElement currentTab)
+            {
+                UpdatePreviewPosition(currentTab);
+            }
+            return;
         }
 
-        // Posiciona ao lado do deck, com o topo alinhado ao topo da aba hoverada.
-        // Se não couber na tela, desloca o mínimo necessário (preview de 240px máx.).
+        ClosePreview();
+
+        if (_previewTab is FrameworkElement tab && tab.DataContext == note)
+        {
+            var (x, top, height) = ComputePreviewPosition(tab);
+            _previewWindow = new NotePreviewWindow(note, _viewModel.Navigation, new Point(x, top), height);
+            _previewWindow.MouseEnter += OnPreviewMouseEnter;
+            _previewWindow.MouseLeave += OnPreviewMouseLeave;
+            _previewWindow.Closed += OnPreviewClosed;
+            _previewWindow.Show();
+        }
+    }
+
+    /// <summary>Calcula a posição do preview ancorado à parte visível da aba
+    /// hoverada: o topo acompanha o topo visível da aba, e se a aba está cortada
+    /// pelo viewport do deck, alinha à borda visível (não some nem fica desalinhado).
+    /// O clamp garante que o preview nunca saia da área de trabalho.</summary>
+    private (double X, double Top, double Height) ComputePreviewPosition(FrameworkElement tab)
+    {
+        double tabTop = GetTabScreenTop(tab);
+        double tabBottom = tabTop + tab.ActualHeight;
+
+        // Parte da aba realmente visível no viewport (em coordenadas de tela).
+        double viewportTop = Top + (TabsScrollViewer.TransformToAncestor(this).Transform(new Point(0, 0)).Y);
+        double viewportBottom = viewportTop + TabsScrollViewer.ViewportHeight;
+        double visibleTop = Math.Max(tabTop, viewportTop);
+        double visibleBottom = Math.Min(tabBottom, viewportBottom);
+        double anchor = visibleTop < visibleBottom ? visibleTop : tabTop;
+
         var workArea = WorkArea;
+        double maxHeight = Math.Min(240, workArea.Bottom - anchor - 8);
+        if (maxHeight < 120)
+        {
+            // Aba perto da borda inferior: sobe o preview para caber.
+            anchor = Math.Max(workArea.Top, workArea.Bottom - 240 - 8);
+            maxHeight = Math.Min(240, workArea.Bottom - anchor - 8);
+        }
+
         double x = DockSide == DockSide.Right
             ? Left - PreviewWidth - PreviewGap
             : Left + ActualWidth + PreviewGap;
 
-        double top = _previewTabY;
-        double maxHeight = Math.Min(240, workArea.Bottom - top - 8);
-        if (maxHeight < 120)
+        return (x, Math.Max(workArea.Top, anchor), Math.Min(240, maxHeight));
+    }
+
+    /// <summary>Re-ancora o preview à aba hoverada (scroll, reposicionamento).</summary>
+    private void UpdatePreviewPosition(FrameworkElement tab)
+    {
+        if (_previewWindow is null || TabsScrollViewer is null)
         {
-            // Aba perto da borda inferior: sobe o preview para caber.
-            top = Math.Max(workArea.Top, workArea.Bottom - 240 - 8);
-            maxHeight = Math.Min(240, workArea.Bottom - top - 8);
+            return;
         }
 
-        _previewWindow = new NotePreviewWindow(note, _viewModel.Navigation, new Point(x, top), maxHeight);
-        _previewWindow.MouseEnter += OnPreviewMouseEnter;
-        _previewWindow.MouseLeave += OnPreviewMouseLeave;
-        _previewWindow.Closed += OnPreviewClosed;
-        _previewWindow.Show();
+        var (x, top, height) = ComputePreviewPosition(tab);
+        _previewWindow.Top = top;
+        _previewWindow.Height = height;
+        _previewWindow.Left = x;
     }
 
     private void OnPreviewMouseEnter(object sender, MouseEventArgs e)
@@ -621,9 +666,10 @@ public partial class DeckWindow : Window
         _viewModel.IsExpanded = true;
 
         // Re-mede com o menu visível: garante que a altura comporta as abas
-        // mesmo se o re-mede do NoteCount ainda não tiver rodado.
+        // mesmo se o re-mede do NoteCount ainda não tiver rodado. A medição usa
+        // MaxMenuHeight como constraint — abas rolam, botões fixos sempre visíveis.
         MenuPanel.Visibility = Visibility.Visible;
-        MenuPanel.Measure(new Size(ExpandedWidth, double.PositiveInfinity));
+        MenuPanel.Measure(new Size(ExpandedWidth, MaxMenuHeight));
         double measured = MenuPanel.DesiredSize.Height + MenuPanel.Margin.Top + MenuPanel.Margin.Bottom;
         if (measured > 0)
         {
@@ -640,6 +686,7 @@ public partial class DeckWindow : Window
         _idleCheckTimer.Start();
         _idleCheckMisses = 0;
         AnimateWidth(ExpandedWidth);
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, UpdateScrollIndicators);
     }
 
     private void Collapse()
@@ -658,6 +705,8 @@ public partial class DeckWindow : Window
         // Recolhe: menu some, pill volta, janela afina.
         MenuPanel.Visibility = Visibility.Collapsed;
         ExpandButton.Visibility = Visibility.Visible;
+        ScrollUpIndicator.Visibility = Visibility.Collapsed;
+        ScrollDownIndicator.Visibility = Visibility.Collapsed;
         UpdateEmptyState();
 
         AnimateWidth(CollapsedWidth);
