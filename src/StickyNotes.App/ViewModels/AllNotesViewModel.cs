@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Threading;
 using StickyNotes.Data;
 using StickyNotes.Models;
 using StickyNotes.Services;
@@ -20,6 +21,7 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
     private readonly List<Note> _all;
     private string _searchText = string.Empty;
     private ArchiveFilter _filter = ArchiveFilter.All;
+    private readonly DispatcherTimer _searchDebounce;
 
     public AllNotesViewModel(INoteRepository repository, NotesCoordinator coordinator,
         INavigationService navigation, IConfirmationService confirmation)
@@ -30,6 +32,15 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
         _confirmation = confirmation;
 
         _all = repository.GetAll();
+
+        // Busca com debounce (200ms): o refresh recria os containers visíveis —
+        // agrupar a digitação evita refazer o mural a cada tecla.
+        _searchDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _searchDebounce.Tick += (_, _) =>
+        {
+            _searchDebounce.Stop();
+            Refresh();
+        };
 
         CreateNoteCommand = new RelayCommand(() => CreateNote());
 
@@ -46,9 +57,10 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
 
     /// <summary>Desassina o coordinator (o mural é aberto/fechado sob demanda; sem
     /// isso a VM ficaria retida pelo NotesChanged do coordinator, vazando memória
-    /// a cada abertura do mural).</summary>
+    /// a cada abertura do mural) e para o timer de busca.</summary>
     public void Dispose()
     {
+        _searchDebounce.Stop();
         _coordinator.NotesChanged -= OnCoordinatorNotesChanged;
         GC.SuppressFinalize(this);
     }
@@ -67,7 +79,10 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
         {
             if (SetProperty(ref _searchText, value))
             {
-                Refresh();
+                // Debounce: a propriedade atualiza na hora (o placeholder do campo
+                // reage), mas o refresh do mural só roda após a pausa na digitação.
+                _searchDebounce.Stop();
+                _searchDebounce.Start();
             }
         }
     }

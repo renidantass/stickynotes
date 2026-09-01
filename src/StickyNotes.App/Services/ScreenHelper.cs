@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using Microsoft.Win32;
 
 namespace StickyNotes.Services;
 
@@ -11,9 +12,24 @@ public sealed record MonitorInfo(string DeviceName, string DisplayName, Rect Wor
 /// monitor pela escala DPI do monitor primário.</summary>
 public static class ScreenHelper
 {
+    /// <summary>Enumeração de monitores é P/Invoke caro por chamada (o App resolve o
+    /// monitor a cada nota aberta/troca do deck) e o resultado só muda ao plugarem
+    /// ou trocarem monitores: cacheia e invalida no DisplaySettingsChanged.</summary>
+    private static IReadOnlyList<MonitorInfo>? _cache;
+
+    static ScreenHelper()
+    {
+        SystemEvents.DisplaySettingsChanged += (_, _) => _cache = null;
+    }
+
     /// <summary>Lista os monitores disponíveis, primário primeiro.</summary>
     public static IReadOnlyList<MonitorInfo> GetMonitors()
     {
+        if (_cache is not null)
+        {
+            return _cache;
+        }
+
         var monitors = new List<MonitorInfo>();
         var primaryDeviceName = GetPrimaryDeviceName();
 
@@ -45,7 +61,8 @@ public static class ScreenHelper
             };
         }
 
-        return ordered;
+        _cache = ordered;
+        return _cache;
     }
 
     /// <summary>Resolve o monitor salvo (por DeviceName). Retorna o primário se o

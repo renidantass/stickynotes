@@ -59,11 +59,12 @@ public class NotesCoordinator
         _repository.Update(note);
         // Atualiza o título/cor em memória sem re-consultar o banco (zero I/O).
         // A posição na lista NUNCA muda ao salvar — ordem estável preservada.
+        // O corpo NÃO é copiado: as instâncias do deck ficam só com metadados
+        // (o corpo decriptado vive no banco e no cache do repositório).
         int index = _notes.FindIndex(n => n.Id == note.Id);
         if (index >= 0)
         {
             _notes[index].Title = note.Title;
-            _notes[index].Body = note.Body;
             _notes[index].Color = note.Color;
         }
     }

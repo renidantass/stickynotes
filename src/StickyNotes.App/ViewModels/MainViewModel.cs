@@ -23,11 +23,10 @@ public class MainViewModel : ViewModelBase
         // Aplica a preferência de tema salva (antes de qualquer janela carregar).
         ThemeManager.ApplyPreference(settingsService.Load().ThemePreference);
 
-        _coordinator.NotesChanged += (_, _) =>
-        {
-            OnPropertyChanged(nameof(Notes));
-            OnPropertyChanged(nameof(NoteCount));
-        };
+        // Assina pelo método nomeado (não lambda): o SetServices desassina o handler
+        // do coordinator vazio ao trocar pelo real — com lambda isso nunca funcionava
+        // e o coordinator vazio ficaria retido pela MainViewModel (que vive para sempre).
+        _coordinator.NotesChanged += OnCoordinatorChanged;
 
         CreateNoteCommand = new RelayCommand(() => CreateNote());
         OpenNoteCommand = new RelayCommand(note => OpenNote((Models.Note)note!));

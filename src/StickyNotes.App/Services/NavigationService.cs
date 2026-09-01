@@ -25,7 +25,8 @@ public class NavigationService : INavigationService
 
     public void OpenNote(Note note)
     {
-        // O deck carrega apenas metadados; o corpo é decriptado sob demanda aqui.
+        // O deck carrega apenas metadados; o corpo é decriptado sob demanda aqui
+        // (cacheado no repositório — reabrir a nota não repete o DPAPI).
         note.Body = _repository.GetBody(note.Id);
 
         // Evita múltiplas janelas da mesma nota (cliques repetidos no preview/aba):

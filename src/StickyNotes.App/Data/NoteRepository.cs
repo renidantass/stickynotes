@@ -15,6 +15,13 @@ public class NoteRepository : INoteRepository
     private readonly SqliteConnection _connection;
     private readonly IEncryptionService _encryption;
 
+    /// <summary>Cache de corpos decriptados (id → corpo). DPAPI/Unprotect é caro:
+    /// sem cache, cada hover no preview re-decriptava a nota e cada reload do mural
+    /// re-decriptava todas. Validade por updated_at (qualquer Update re-escreve a
+    /// chave); teto de entradas para o cache não reter todos os corpos para sempre.</summary>
+    private const int MaxCachedBodies = 512;
+    private readonly Dictionary<long, (string UpdatedAt, string Body)> _bodyCache = new();
+
     public NoteRepository(string dbPath, IEncryptionService encryption)
     {
         _encryption = encryption;
@@ -69,21 +76,36 @@ public class NoteRepository : INoteRepository
         return rows.Select(ToNote).ToList();
     }
 
-    /// <summary>Corpo decriptado de uma nota (sob demanda — não custa no startup).</summary>
+    /// <summary>Corpo decriptado de uma nota (sob demanda — não custa no startup).
+    /// Usa o cache de decriptação: o hover repetido no preview não repete DPAPI.</summary>
     public string GetBody(long id)
     {
-        string cipher = _connection.ExecuteScalar<string>(
-            "SELECT body_cipher FROM notes WHERE id = $id;", new { id }) ?? string.Empty;
-        return _encryption.Decrypt(cipher);
+        var row = _connection.QuerySingleOrDefault<(string BodyCipher, string UpdatedAt)>(
+            "SELECT body_cipher, updated_at FROM notes WHERE id = $id;", new { id });
+        if (row == default)
+        {
+            return string.Empty;
+        }
+
+        if (_bodyCache.TryGetValue(id, out var cached) && cached.UpdatedAt == row.UpdatedAt)
+        {
+            return cached.Body;
+        }
+
+        string body = _encryption.Decrypt(row.BodyCipher);
+        CacheBody(id, row.UpdatedAt, body);
+        return body;
     }
 
     public long Insert(Note note)
     {
-        return _connection.ExecuteScalar<long>("""
+        long id = _connection.ExecuteScalar<long>("""
             INSERT INTO notes (title, body_cipher, color, is_archived, created_at, updated_at)
             VALUES ($title, $body, $color, $archived, $created, $updated);
             SELECT last_insert_rowid();
             """, ToParams(note));
+        CacheBody(id, note.UpdatedAt.ToString("o"), note.Body ?? string.Empty);
+        return id;
     }
 
     public void Update(Note note)
@@ -95,23 +117,55 @@ public class NoteRepository : INoteRepository
                 is_archived = $archived, updated_at = $updated
             WHERE id = $id;
             """, ToParams(note));
+        // Pré-aquece o cache com o corpo recém-salvo: o preview seguinte não decripta.
+        CacheBody(note.Id, note.UpdatedAt.ToString("o"), note.Body ?? string.Empty);
     }
 
     public void Delete(long id)
     {
         _connection.Execute("DELETE FROM notes WHERE id = $id;", new { id });
+        _bodyCache.Remove(id);
     }
 
-    private Note ToNote(NoteRow row) => new()
+    private void CacheBody(long id, string updatedAt, string body)
     {
-        Id = row.Id,
-        Title = row.Title,
-        Body = _encryption.Decrypt(row.BodyCipher),
-        Color = row.Color,
-        IsArchived = row.IsArchived,
-        CreatedAt = ParseRoundTrip(row.CreatedAt),
-        UpdatedAt = ParseRoundTrip(row.UpdatedAt),
-    };
+        if (_bodyCache.Count >= MaxCachedBodies)
+        {
+            _bodyCache.Clear();
+        }
+
+        _bodyCache[id] = (updatedAt, body);
+    }
+
+    private Note ToNote(NoteRow row)
+    {
+        string body;
+        if (string.IsNullOrEmpty(row.BodyCipher))
+        {
+            // Modo metadados (GetAllMetadata): corpo vazio, sem tocar em DPAPI.
+            body = string.Empty;
+        }
+        else if (_bodyCache.TryGetValue(row.Id, out var cached) && cached.UpdatedAt == row.UpdatedAt)
+        {
+            body = cached.Body;
+        }
+        else
+        {
+            body = _encryption.Decrypt(row.BodyCipher);
+            CacheBody(row.Id, row.UpdatedAt, body);
+        }
+
+        return new Note()
+        {
+            Id = row.Id,
+            Title = row.Title,
+            Body = body,
+            Color = row.Color,
+            IsArchived = row.IsArchived,
+            CreatedAt = ParseRoundTrip(row.CreatedAt),
+            UpdatedAt = ParseRoundTrip(row.UpdatedAt),
+        };
+    }
 
     /// <summary>Datas gravadas em formato round-trip ISO 8601 ("o"): o parse deve ser
     /// invariante à localidade do usuário, senão o formato pode ser mal interpretado.</summary>

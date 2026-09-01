@@ -77,13 +77,17 @@ public static class ThemeManager
         DarkResources["EmptyStateBrush"] = Brush("#8A8A8A");
 
         Detect();
-        SystemEvents.UserPreferenceChanged += (_, e) =>
+        // Handler nomeado (não lambda): se um dia o ThemeManager precisar desassinar,
+        // o lambda anônimo torna isso impossível (e vira leak de processo).
+        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+    }
+
+    private static void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category == UserPreferenceCategory.General || e.Category == UserPreferenceCategory.Color)
         {
-            if (e.Category == UserPreferenceCategory.General || e.Category == UserPreferenceCategory.Color)
-            {
-                Detect();
-            }
-        };
+            Detect();
+        }
     }
 
     /// <summary>Define a preferência de tema (sistema/claro/escuro) e reaplica.</summary>
@@ -153,6 +157,15 @@ public static class ThemeManager
         Apply(null, EventArgs.Empty);
     }
 
-    private static System.Windows.Media.SolidColorBrush Brush(string hex) =>
-        new(System.Windows.Media.ColorConverter.ConvertFromString(hex) is System.Windows.Media.Color c ? c : System.Windows.Media.Colors.Transparent);
+    private static System.Windows.Media.SolidColorBrush Brush(string hex)
+    {
+        var brush = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.ColorConverter.ConvertFromString(hex) is System.Windows.Media.Color c
+                ? c
+                : System.Windows.Media.Colors.Transparent);
+        // Congelado: brush imutável e compartilhável — o WPF renderiza sem o custo
+        // de verificação de mudança de cada brush dinâmico.
+        brush.Freeze();
+        return brush;
+    }
 }

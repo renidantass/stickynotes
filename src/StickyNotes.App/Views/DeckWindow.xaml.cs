@@ -272,6 +272,16 @@ public partial class DeckWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        // Cleanup obrigatório: o App recria o deck a cada troca de lado/monitor e a
+        // MainViewModel vive para sempre. Sem isso, a janela antiga ficava retida
+        // pelo PropertyChanged (leak da árvore visual inteira) e os timers seguiam
+        // vivos — o idle check rodava GetCursorPos 8x/s com o deck já fechado.
+        _hoverTimer.Stop();
+        _previewTimer.Stop();
+        _idleCheckTimer.Stop();
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ClosePreview();
+
         var handle = new WindowInteropHelper(this).Handle;
         if (handle != IntPtr.Zero)
         {
@@ -376,6 +386,14 @@ public partial class DeckWindow : Window
     /// do preview (que pode ser reposicionado para caber na tela).</summary>
     private void OnIdleCheckTimerTick(object? sender, EventArgs e)
     {
+        // Defesa extra contra timer zumbi: se a janela fechou expandida (o OnClosed
+        // já para o timer, mas por garantia), o tick se encerra sozinho.
+        if (!IsLoaded)
+        {
+            _idleCheckTimer.Stop();
+            return;
+        }
+
         bool overDeck = IsMouseOverDeckOnlyArea() || IsMouseOverPreviewArea();
         _mouseOverDeck = overDeck;
 
@@ -510,15 +528,16 @@ public partial class DeckWindow : Window
 
     private void ShowPreview(Note note)
     {
-        // O deck carrega só metadados; busca o corpo decriptado sob demanda
-        // (mesmo caminho do editor) para o preview mostrar o conteúdo.
-        note.Body = _viewModel.Navigation.GetNoteBody(note.Id);
+        // O deck carrega só metadados: busca o corpo decriptado sob demanda (cacheado
+        // no repositório) e passa direto ao preview — nunca escreve no objeto Note
+        // compartilhado do deck, senão todo hover reteria o corpo decriptado nele.
+        string body = _viewModel.Navigation.GetNoteBody(note.Id);
 
         // Reutiliza a janela já aberta (troca de conteúdo sem fechar/reabrir —
         // evita flicker ao passar rapidamente por várias abas).
         if (_previewWindow is not null && _previewNote == note)
         {
-            _previewWindow.Refresh(note, _viewModel.Navigation);
+            _previewWindow.Refresh(note, body, _viewModel.Navigation);
             if (_previewTab is FrameworkElement currentTab)
             {
                 UpdatePreviewPosition(currentTab);
@@ -531,7 +550,7 @@ public partial class DeckWindow : Window
         if (_previewTab is FrameworkElement tab && tab.DataContext == note)
         {
             var (x, top, height) = ComputePreviewPosition(tab);
-            _previewWindow = new NotePreviewWindow(note, _viewModel.Navigation, new Point(x, top), height);
+            _previewWindow = new NotePreviewWindow(note, body, _viewModel.Navigation, new Point(x, top), height);
             _previewWindow.MouseEnter += OnPreviewMouseEnter;
             _previewWindow.MouseLeave += OnPreviewMouseLeave;
             _previewWindow.Closed += OnPreviewClosed;

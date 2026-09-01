@@ -21,9 +21,20 @@ public static class NoteColorBrush
     // re-render do deck/mural (hover, digitação, troca de cor).
     private static readonly Dictionary<string, Brush> BrushCache = new();
     private static readonly Dictionary<string, LinearGradientBrush> GradientCache = new();
+    private static readonly Dictionary<string, Brush> TapeCache = new();
+    private static readonly Dictionary<string, Brush> FoldCache = new();
 
     public static Brush Get(string color) =>
         GetOrAdd(BrushCache, color, static c => new SolidColorBrush(Resolve(c)));
+
+    /// <summary>Fita translúcida sobre a nota (idêntica para todas as cores) —
+    /// um único brush congelado, reutilizado a cada refresh do preview.</summary>
+    public static Brush GetTape() =>
+        GetOrAdd(TapeCache, "tape", static _ => new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF)));
+
+    /// <summary>Canto dobrado da nota (cor escurecida), um brush congelado por cor.</summary>
+    public static Brush GetFold(string color) =>
+        GetOrAdd(FoldCache, color, static c => new SolidColorBrush(Darken(c)));
 
     /// <summary>Versão escurecida da cor (canto dobrado da nota, sombras).</summary>
     public static Color Darken(string color, double factor = 0.72)

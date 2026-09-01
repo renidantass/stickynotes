@@ -15,7 +15,7 @@ public partial class NotePreviewWindow : Window
     private Note _note;
     private INavigationService _navigation;
 
-    public NotePreviewWindow(Note note, INavigationService navigation, Point position, double maxHeight)
+    public NotePreviewWindow(Note note, string body, INavigationService navigation, Point position, double maxHeight)
     {
         AppWindowSetup.ApplyTheme(this);
         InitializeComponent();
@@ -24,7 +24,7 @@ public partial class NotePreviewWindow : Window
         _navigation = navigation;
 
         TitleText.Text = note.Title;
-        BodyText.Text = note.Body;
+        BodyText.Text = body;
         ApplyColor(note.Color);
 
         Height = Math.Min(240, maxHeight);
@@ -49,18 +49,20 @@ public partial class NotePreviewWindow : Window
         var brush = NoteColorBrush.Get(color);
         PreviewBorder.Background = brush;
         Background = brush; // o fundo da janela cobre a área do chrome (cantos recortados)
-        TapeBorder.Background = new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF));
-        FoldPath.Fill = new SolidColorBrush(NoteColorBrush.Darken(color));
+        TapeBorder.Background = NoteColorBrush.GetTape();
+        FoldPath.Fill = NoteColorBrush.GetFold(color);
     }
 
     /// <summary>Atualiza o conteúdo da janela para outra nota (sem recriar a janela) —
-    /// usado quando o hover muda de aba com o preview já aberto, evitando flicker.</summary>
-    public void Refresh(Note note, INavigationService navigation)
+    /// usado quando o hover muda de aba com o preview já aberto, evitando flicker.
+    /// O corpo chega pronto (decriptado sob demanda pelo deck): nunca lê/escreve
+    /// note.Body no objeto compartilhado.</summary>
+    public void Refresh(Note note, string body, INavigationService navigation)
     {
         _note = note;
         _navigation = navigation;
         TitleText.Text = note.Title;
-        BodyText.Text = note.Body;
+        BodyText.Text = body;
         ApplyColor(note.Color);
     }
 

@@ -112,7 +112,9 @@ public partial class AllNotesWindow : Window
     }
 
     /// <summary>Conjunto de notas que já receberam a animação de entrada — re-renders
-    /// (busca/filtro) não re-animam post-its existentes, só os novos.</summary>
+    /// (busca/filtro) não re-animam post-its existentes, só os novos. Teto alto o
+    /// suficiente para nunca re-animar em uso normal (limpo quando estoura).</summary>
+    private const int MaxAnimatedNoteIds = 1024;
     private readonly HashSet<long> _animatedNoteIds = [];
 
     /// <summary>Entrada do post-it: fade + leve subida, com stagger por índice
@@ -141,6 +143,10 @@ public partial class AllNotesWindow : Window
         double delayMs = MotionService.Enabled
             ? (index * 20) + (index % 3) * 5
             : 0;
+
+        // Com virtualização, containers realizam ao rolar: o stagger por índice
+        // absoluto não pode crescer sem limite (a nota nº 200 esperaria 4s).
+        delayMs = Math.Min(delayMs, 240);
 
         var fade = new DoubleAnimation(1, TimeSpan.FromMilliseconds(220))
         {
