@@ -10,6 +10,7 @@ public class SettingsViewModel : ViewModelBase
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string RunValueName = "StickyNotes";
+    private const string ShortcutName = "StickyNotes.lnk";
 
     private readonly SettingsService _settingsService;
     private readonly Settings _settings;
@@ -166,29 +167,48 @@ public class SettingsViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Registra/remove o app no Run key do registro (iniciar com o Windows).
-    /// Usa o caminho do executável atual; em Debug aponta para o exe da build.</summary>
+    /// <summary>Cria/remove um atalho na pasta Inicializar (shell:startup) do usuário
+    /// (iniciar com o Windows). Usa o caminho do executável atual; em Debug aponta para o exe da build.</summary>
     private void ApplyStartWithWindows()
     {
         try
         {
-            using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath);
+            // Migração: instalações antigas usavam a Run key do registro.
+            using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true))
+            {
+                key?.DeleteValue(RunValueName, throwOnMissingValue: false);
+            }
+
+            string linkPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Startup), ShortcutName);
             if (_startWithWindows)
             {
                 string exe = Environment.ProcessPath ?? string.Empty;
-                if (!string.IsNullOrEmpty(exe))
+                if (string.IsNullOrEmpty(exe))
                 {
-                    key.SetValue(RunValueName, $"\"{exe}\"");
+                    return;
                 }
+
+                var shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType is null)
+                {
+                    return;
+                }
+
+                dynamic shell = Activator.CreateInstance(shellType)!;
+                dynamic shortcut = shell.CreateShortcut(linkPath);
+                shortcut.TargetPath = exe;
+                shortcut.WorkingDirectory = Path.GetDirectoryName(exe) ?? string.Empty;
+                shortcut.Save();
             }
             else
             {
-                key.DeleteValue(RunValueName, throwOnMissingValue: false);
+                File.Delete(linkPath);
             }
         }
         catch (IOException)
         {
-            // Sem acesso ao registro: ignora (a preferência fica salva no JSON).
+            // Sem acesso à pasta/atalho: ignora (a preferência fica salva no JSON).
         }
         catch (UnauthorizedAccessException)
         {
