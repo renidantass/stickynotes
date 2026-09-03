@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 560" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="fy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3A3"/><stop offset="1" stop-color="#F5D93B"/></linearGradient>
+    <filter id="fsh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000" flood-opacity="0.5"/></filter>
+  </defs>
+  <rect width="640" height="560" rx="18" fill="#1B2340"/>
+  <circle cx="520" cy="90" r="140" fill="#7C5CFF" opacity="0.3"/>
+  <circle cx="90" cy="470" r="120" fill="#00C2FF" opacity="0.2"/>
+  <g filter="url(#fsh)">
+    <rect x="150" y="60" width="340" height="440" rx="12" fill="url(#fy)"/>
+    <rect x="150" y="60" width="340" height="440" rx="12" fill="none" stroke="#000" stroke-opacity="0.2"/>
+    <!-- titlebar -->
+    <text x="170" y="98" font-size="17" font-weight="700" fill="#1F1F1F">💡 Ideia de app</text>
+    <text x="330" y="98" font-size="12" fill="#4A7A2E">✓ salvo</text>
+    <g font-size="15" fill="#1F1F1F">
+      <text x="448" y="98">◐</text>
+      <text x="440" y="100" font-size="11" fill="#C42B1C">⬤</text>
+      <text x="443" y="104" font-size="8" fill="#fff" text-anchor="middle">✕</text>
+    </g>
+    <line x1="150" y1="116" x2="490" y2="116" stroke="#000" stroke-opacity="0.08"/>
+    <g font-size="15" fill="#2A2A2A">
+      <text x="170" y="148">Lançar o app em 3 passos:</text>
+      <text x="170" y="176">1. onboard em 10 segundos</text>
+      <text x="170" y="204">2. sem login, sem nuvem,</text>
+      <text x="170" y="232">tudo fica no PC</text>
+      <text x="170" y="260">3. clicar, anotar, pronto 🚀</text>
+    </g>
+    <!-- paleta -->
+    <g>
+      <rect x="170" y="300" width="300" height="64" rx="10" fill="#000" opacity="0.08"/>
+      <circle cx="196" cy="332" r="16" fill="#FFE866" stroke="#1F1F1F" stroke-width="2"/>
+      <circle cx="236" cy="332" r="16" fill="#FF9FC6"/>
+      <circle cx="276" cy="332" r="16" fill="#8AC6FF"/>
+      <circle cx="316" cy="332" r="16" fill="#A8E09C"/>
+      <circle cx="356" cy="332" r="16" fill="#D6B8FF"/>
+      <circle cx="396" cy="332" r="16" fill="#FFD07A"/>
+    </g>
+    <text x="170" y="400" font-size="12" fill="#2A2A2A" opacity="0.75">Ctrl + . troca a cor · Ctrl + Del exclui · Esc fecha</text>
+    <text x="170" y="470" font-size="12" fill="#2A2A2A" opacity="0.6">🔒 corpo criptografado (DPAPI) · título pesquisável</text>
+  </g>
+</svg>

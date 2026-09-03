@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StickyNotes — suas ideias grudadas na tela, nunca mais perdidas</title>
+<meta name="description" content="StickyNotes é o bloco de post-its superleve para Windows. Deck lateral sempre à mão, notas instantâneas, 100% offline e grátis.">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+<meta property="og:title" content="StickyNotes — nunca mais perca uma ideia">
+<meta property="og:description" content="Post-its nativos para Windows. Leve, rápido, offline e grátis.">
+<meta property="og:image" content="img/app-hero.svg">
+</head>
+<body>
+<a class="skip-link" href="#main">Pular para o conteúdo</a>
+
+<header class="nav" id="top">
+<div class="nav-inner">
+<a class="brand" href="#top">
+<img src="img/favicon.svg" alt="StickyNotes" width="30" height="30">
+<span>StickyNotes</span>
+</a>
+<nav class="nav-links" id="navLinks" aria-label="Principal">
+<a href="#demo">Ver em ação</a>
+<a href="#beneficios">Por que usar</a>
+<a href="#como-funciona">Como funciona</a>
+<a href="#privacidade">Privacidade</a>
+<a href="#faq">Dúvidas</a>
+</nav>
+<div class="nav-cta" id="navCta">
+<a class="btn btn-small btn-ghost" href="https://github.com/renidantass/stickynotes" target="_blank" rel="noopener">GitHub</a>
+<a class="btn btn-small btn-primary" href="#download">Baixar grátis</a>
+</div>
+<button class="nav-toggle" id="navToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+</div>
+</header>
+
+<main id="main">
+<section class="hero">
+<div class="hero-inner">
+<div class="hero-copy">
+<div class="pill-row">
+<span class="pill">⚡ Levíssimo para Windows 10 e 11</span>
+<span class="pill pill-ghost">🔒 100% offline</span>
+</div>
+<h1>Sua cabeça esquece.<br><span class="hl">O StickyNotes não.</span></h1>
+<p class="lede">Um post-it que fica grudado na borda da tela, abre num piscar de olhos e guarda tudo — sem login, sem nuvem, sem enrolação. Ideia teve, anotou, tá salva.</p>
+<div class="hero-ctas">
+<a class="btn btn-primary btn-big" href="#download">⬇ Baixar grátis para Windows</a>
+<a class="btn btn-ghost btn-big" href="#demo">Ver ele em ação</a>
+</div>
+<ul class="hero-proof">
+<li><strong>10 seg</strong><span>para criar a 1ª nota</span></li>
+<li><strong>0 contas</strong><span>sem cadastro nem sync</span></li>
+<li><strong>Ctrl+Alt+S</strong><span>chama o deck de qualquer lugar</span></li>
+</ul>
+</div>
+<div class="hero-shot">
+<span class="chip-corner" aria-hidden="true"></span>
+<img src="img/app-hero.svg" alt="StickyNotes em uso: deck lateral na borda e post-its coloridos sobre o desktop" width="1280" height="800" fetchpriority="high">
+<span class="hero-note-chip yellow" aria-hidden="true">💡</span>
+<span class="hero-note-chip green" aria-hidden="true">✓</span>
+<span class="hero-note-chip pink" aria-hidden="true">✎</span>
+<p class="caption">O deck mora na borda da tela. Passou o mouse, ele abre. Tirou o mouse, ele some.</p>
+</div>
+</div>
+<div class="ticker" aria-hidden="true">
+<span>Sem assinatura</span><span>•</span><span>Sem anúncios</span><span>•</span><span>Sem telemetria</span><span>•</span><span>Startup instantâneo</span><span>•</span><span>Tema claro e escuro</span><span>•</span><span>Inicia com o Windows</span><span>•</span>
+</div>
+</section>
+
+<section class="logos" aria-label="Tecnologias">
+<p>FEITO COM TECNOLOGIA NATIVA WINDOWS — RÁPIDO DE VERDADE, NÃO É ELECTRON PESADÃO</p>
+<div class="logo-row">
+<span>WPF nativo</span><span>.NET 10</span><span>SQLite local</span><span>DPAPI do Windows</span><span>Win-x64 + ARM64</span>
+</div>
+</section>
+
+<section class="section demo" id="demo" aria-labelledby="demo-title">
+<div class="wrap">
+<p class="kicker">Tour visual</p>
+<h2 id="demo-title">Parece um post-it. Age como um assistente.</h2>
+<p class="sub">Três telas, zero curva de aprendizado. Olha ele trabalhando:</p>
+<div class="tabs" role="tablist" aria-label="Telas do StickyNotes">
+<button class="tab active" id="tab-deck" role="tab" aria-selected="true" aria-controls="panel-deck">📌 O deck lateral</button>
+<button class="tab" id="tab-mural" role="tab" aria-selected="false" aria-controls="panel-mural" tabindex="-1">🗂 O mural de notas</button>
+<button class="tab" id="tab-nota" role="tab" aria-selected="false" aria-controls="panel-nota" tabindex="-1">✎ A nota aberta</button>
+</div>
+
+<div class="tab-panel active" id="panel-deck" role="tabpanel" aria-labelledby="tab-deck" tabindex="0">
+<div class="panel-grid">
+<img src="img/app-hero.svg" alt="Deck lateral expandido ao lado de notas coloridas" loading="lazy">
+<div class="panel-text">
+<h3>Uma pílula de 24px que vira seu painel de ideias</h3>
+<p>O deck fica encostado na borda — esquerda ou direita, no monitor que você escolher. É tão fino que você esquece que ele existe… até precisar.</p>
+<ul class="check">
+<li><strong>Hover abre, mouse fora fecha.</strong> Nada de janela ocupando espaço.</li>
+<li><strong>Abas coloridas por nota.</strong> Você acha no olho onde cada coisa está — a posição nunca muda sozinha.</li>
+<li><strong>Hotkey global Ctrl+Alt+S.</strong> Tá no jogo, no Excel, no navegador? O deck aparece.</li>
+<li><strong>Badge com contagem.</strong> Quantas ideias você já guardou hoje?</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="tab-panel" id="panel-mural" role="tabpanel" aria-labelledby="tab-mural" tabindex="0" hidden>
+<div class="panel-grid">
+<img src="img/app-mural.svg" alt="Mural Todas as notas com busca, filtros e post-its" loading="lazy">
+<div class="panel-text">
+<h3>Todas as notas num mural que dá gosto de olhar</h3>
+<p>Aperte <strong>▤</strong> no deck e caia no mural: busca instantânea enquanto digita, filtros Todas / Ativas / Arquivadas e aquele visual de post-it com fitinha.</p>
+<ul class="check">
+<li><strong>Busca que responde na hora</strong> — sem loading, sem spinner.</li>
+<li><strong>Hover revela ações:</strong> abrir, arquivar, excluir. Um clique, sem menu escondido.</li>
+<li><strong>Arquive sem medo:</strong> sai da frente, mas continua pesquisável.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="tab-panel" id="panel-nota" role="tabpanel" aria-labelledby="tab-nota" tabindex="0" hidden>
+<div class="panel-grid">
+<img src="img/app-nota.svg" alt="Nota aberta com paleta de 6 cores" loading="lazy">
+<div class="panel-text">
+<h3>A nota em si: rápida, colorida, à prova de distração</h3>
+<p>Sem barra de título, sem menu, sem chrome. Só você e o texto — sempre por cima das outras janelas, com salvamento automático a cada tecla.</p>
+<ul class="check">
+<li><strong>Verde de “salvo”</strong> — digitou, já gravou. Pode fechar sem medo.</li>
+<li><strong>6 cores de post-it real</strong> — Ctrl + . gira a paleta na hora.</li>
+<li><strong>Atalhos de gente ocupada:</strong> Esc fecha, Ctrl+Del exclui, Ctrl+F pula pro texto.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section class="section beneficios" id="beneficios" aria-labelledby="beneficios-title">
+<div class="wrap">
+<p class="kicker">Por que trocar?</p>
+<h2 id="beneficios-title">Bloco de notas some. Notion pesa. <span class="hl">Post-it gruda.</span></h2>
+<p class="sub">O StickyNotes foi desenhado para o uso real: anotar em 2 segundos e achar em 5.</p>
+<div class="benefit-lead">
+<article class="card blue card-lead reveal">
+<div class="card-emoji" aria-hidden="true">🔒</div>
+<h3>Suas notas são só suas</h3>
+<p>Sem conta, sem nuvem, sem vazamento. O conteúdo fica num SQLite no seu PC, criptografado pelo DPAPI do Windows — a mesma proteção que guarda suas credenciais.</p>
+<ul>
+<li>Funciona com Wi-Fi desligado, no avião, no sítio. Para sempre.</li>
+<li>Quer levar embora? Copie a pasta, pronto. Seus dados, suas regras.</li>
+</ul>
+</article>
+</div>
+<div class="cards">
+<article class="card yellow reveal">
+<div class="card-emoji" aria-hidden="true">~10s</div>
+<h3>Abre antes de você piscar</h3>
+<p>O deck aparece na hora e o banco carrega em segundo plano. Nada de splash screen, nada de “aguarde…”.</p>
+</article>
+<article class="card pink reveal">
+<div class="card-emoji" aria-hidden="true">~0<br>MB</div>
+<h3>Leve de verdade</h3>
+<p>Nativo em WPF, sem Electron, sem 300 MB de RAM para um bloquinho. Fica quieto no canto consumindo quase nada.</p>
+</article>
+<article class="card green reveal">
+<div class="card-emoji" aria-hidden="true">1:1</div>
+<h3>Sempre à mão, nunca no caminho</h3>
+<p>Sempre por cima quando precisa, invisível quando não precisa. Multi-monitor? Escolha em qual tela o deck gruda.</p>
+</article>
+<article class="card purple reveal">
+<div class="card-emoji" aria-hidden="true">2×</div>
+<h3>Lindo no claro e no escuro</h3>
+<p>Segue o tema do Windows automaticamente. Os post-its continuam legíveis e coloridos nos dois modos.</p>
+</article>
+</div>
+</div>
+</section>
+
+<section class="section steps" id="como-funciona" aria-labelledby="como-title">
+<div class="wrap">
+<p class="kicker">Comece agora</p>
+<h2 id="como-title">Do download à primeira nota <span class="hl">em menos de 1 minuto</span></h2>
+<div class="steps-grid">
+<div class="step step-featured reveal"><h3>Baixe e abra</h3><p>Instalador? Que instalador. Baixe o zip, extraia e rode. Pode marcar “iniciar com o Windows”.</p></div>
+<div class="step reveal"><h3>Clique na pílula ✎</h3><p>Aquela barrinha na borda da tela é o deck. Um clique e nasce sua primeira nota amarela.</p></div>
+<div class="step reveal"><h3>Digite e esqueça</h3><p>Salvou sozinho. Feche, desligue o PC, volte semana que vem — tá lá, intacta e pesquisável.</p></div>
+</div>
+</div>
+</section>
+
+<section class="section privacy" id="privacidade" aria-labelledby="priv-title">
+<div class="wrap privacy-grid">
+<div>
+<p class="kicker">Privacidade radical</p>
+<h2 id="priv-title">Sem nuvem. Sem conta.<br><span class="hl">Sem ninguém lendo por cima do ombro.</span></h2>
+<p>Suas listas de compra, senhas de wifi, ideias de negócio e desabafos ficam num arquivo <strong>notes.db</strong> dentro do seu AppData — com o texto criptografado pela mesma tecnologia que o Windows usa para proteger suas credenciais.</p>
+<ul class="check">
+<li>O título fica legível para busca e deck rápidos; o conteúdo vai cifrado.</li>
+<li>Funciona com Wi-Fi desligado, no avião, no sítio. Para sempre.</li>
+<li>Quer levar embora? Copie a pasta, pronto. Seus dados, suas regras.</li>
+</ul>
+</div>
+<div class="privacy-card">
+<div class="privacy-card-head">🔐 notes.db <span>no seu PC</span></div>
+<pre><span class="dim">{
+  "title": "Ideia de app",
+  "body_cipher":</span> "AQAAANCM…" <span class="dim">/* ilegível sem seu login */</span>
+<span class="dim">  "color": "yellow",
+  "updated_at": "2026-09-03"
+}</span></pre>
+<p>Nem abrindo o banco na mão dá para ler o conteúdo sem o seu login do Windows.</p>
+<span class="lock-note">🔑 Só você tem a chave</span>
+</div>
+</div>
+</section>
+
+<section class="section shortcuts" aria-labelledby="sc-title">
+<div class="wrap">
+<h2 id="sc-title">Atalhos que viram reflexo</h2>
+<p class="sub">Decore dois e você nunca mais toca no mouse.</p>
+<div class="shortcut-grid">
+<div class="sc"><span class="keys"><kbd>Ctrl</kbd><em>+</em><kbd>Alt</kbd><em>+</em><kbd>S</kbd></span><span class="desc">mostra / esconde o deck de qualquer app</span></div>
+<div class="sc"><span class="keys"><kbd>Ctrl</kbd><em>+</em><kbd>.</kbd></span><span class="desc">troca a cor da nota</span></div>
+<div class="sc"><span class="keys"><kbd>Ctrl</kbd><em>+</em><kbd>Del</kbd></span><span class="desc">exclui a nota aberta</span></div>
+<div class="sc"><span class="keys"><kbd>Esc</kbd></span><span class="desc">fecha a nota / recolhe o deck</span></div>
+<div class="sc"><span class="keys"><kbd>↑</kbd><kbd>↓</kbd><em>+</em><kbd>Enter</kbd></span><span class="desc">navega e abre notas no deck</span></div>
+</div>
+</div>
+</section>
+
+<section class="section download" id="download" aria-labelledby="dl-title">
+<div class="wrap download-box">
+<div>
+<p class="kicker">Grátis, para sempre</p>
+<h2 id="dl-title">Baixe agora e cole sua primeira ideia <span class="hl">ainda hoje</span></h2>
+<p>Windows 10 e 11 · versões Intel/AMD (x64) e ARM · atualizações pelo GitHub Releases.</p>
+<div class="dl-buttons">
+<a class="btn btn-primary btn-big" href="https://github.com/renidantass/stickynotes/releases/latest/download/StickyNotes-win-x64.zip">⬇ Windows x64</a>
+<a class="btn btn-ghost btn-big" href="https://github.com/renidantass/stickynotes/releases/latest/download/StickyNotes-win-arm64.zip">⬇ Windows ARM64</a>
+</div>
+<p class="fine"><a href="https://github.com/renidantass/stickynotes/releases" target="_blank" rel="noopener">Ver todas as versões →</a> · <a href="https://github.com/renidantass/stickynotes" target="_blank" rel="noopener">Código-fonte no GitHub →</a></p>
+</div>
+<div class="dl-card">
+<p class="dl-stars">★★★★★</p>
+<p class="dl-quote">“Finalmente um post-it que não some atrás das janelas e não me pede login.”</p>
+<p class="dl-author">— você, daqui a 10 minutos</p>
+<ul class="check">
+<li>Sem cadastro</li>
+<li>Sem anúncios</li>
+<li>Sem telemetria</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section class="section faq" id="faq" aria-labelledby="faq-title">
+<div class="wrap narrow">
+<h2 id="faq-title">Perguntas frequentes</h2>
+<details open>
+<summary>É grátis mesmo? Qual a pegadinha?</summary>
+<div class="faq-body"><p>Nenhuma. Sem plano pago, sem ads, sem limite de notas. O projeto vive no GitHub e você baixa direto das Releases.</p></div>
+</details>
+<details>
+<summary>Precisa de internet?</summary>
+<div class="faq-body"><p>Não. Tudo é local: notas, busca, configurações. Internet só para baixar e atualizar.</p></div>
+</details>
+<details>
+<summary>Onde ficam minhas notas?</summary>
+<div class="faq-body"><p>Em <strong>%AppData%\StickyNotes\notes.db</strong> (SQLite), com o conteúdo criptografado via DPAPI. Faça backup copiando essa pasta.</p></div>
+</details>
+<details>
+<summary>Funciona com dois monitores?</summary>
+<div class="faq-body"><p>Sim. Nas Configurações (⚙ no deck) você escolhe o lado — esquerda ou direita — e em qual monitor o deck fica grudado.</p></div>
+</details>
+<details>
+<summary>Ele fica por cima de tudo e atrapalha?</summary>
+<div class="faq-body"><p>As notas ficam sempre visíveis de propósito, mas o deck recolhe para uma pílula de 24px. Um Esc e tudo se recolhe.</p></div>
+</details>
+<details>
+<summary>Tem como recuperar nota apagada?</summary>
+<div class="faq-body"><p>Notas excluídas vão embora de verdade (sem lixeira, por enquanto). Para “guardar sem mostrar”, use Arquivar 🗂 em vez de excluir.</p></div>
+</details>
+</div>
+</section>
+
+<section class="section final-cta" aria-labelledby="final-title">
+<div class="wrap">
+<h2 id="final-title">Sua próxima grande ideia dura <span class="hl">8 segundos na cabeça.</span><br>Cole ela num post-it.</h2>
+<a class="btn btn-primary btn-big" href="#download">Quero meu StickyNotes grátis ⬇</a>
+</div>
+</section>
+</main>
+
+<footer>
+<div class="wrap foot">
+<a class="brand" href="#top"><img src="img/favicon.svg" alt="" width="24" height="24"><span>StickyNotes</span></a>
+<p>Feito para Windows · <a href="https://github.com/renidantass/stickynotes" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/renidantass/stickynotes/releases" target="_blank" rel="noopener">Releases</a></p>
+<p class="copy">© <span id="year">2026</span> StickyNotes. Grátis para usar e compartilhar.</p>
+</div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
