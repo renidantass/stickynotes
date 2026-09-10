@@ -10,6 +10,16 @@
     <RootNamespace>StickyNotes</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resources\StickyNotes.ico</ApplicationIcon>
+    <!-- Versão explícita: sem isto o binário sai como 1.0.0 fixo e um bug report
+         não pode ser correlacionado com o release que o usuário instalou. -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>StickyNotes</Product>
+    <AssemblyTitle>Sticky Notes</AssemblyTitle>
+    <Company>StickyNotes</Company>
+    <Description>Notas adesivas para Windows.</Description>
+    <NeutralLanguage>pt-BR</NeutralLanguage>
     <!-- Startup rápido em Release: AOT parcial (ReadyToRun) + PGO tiered.
          WPF não suporta trimming/single-file, então só R2R + PGO. -->
     <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>

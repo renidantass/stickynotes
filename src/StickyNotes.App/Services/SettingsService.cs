@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace StickyNotes.Services;
 
@@ -8,9 +9,14 @@ public enum DockSide { Left, Right }
 /// <summary>Tema do app: segue o sistema ou força claro/escuro.</summary>
 public enum ThemePreference { System, Light, Dark }
 
-/// <summary>Configurações persistentes do app (JSON em %AppData%\StickyNotes).</summary>
+/// <summary>Configurações persistentes do app (JSON em %LocalAppData%\StickyNotes).</summary>
 public class Settings
 {
+    /// <summary>Versão do schema do arquivo — permite migrar/descartar config antiga
+    /// em vez de reinterpretar campos silenciosamente.</summary>
+    public const int CurrentVersion = 1;
+
+    public int Version { get; set; } = CurrentVersion;
     public DockSide DockSide { get; set; } = DockSide.Right;
     public ThemePreference ThemePreference { get; set; } = ThemePreference.System;
     public bool StartWithWindows { get; set; }
@@ -22,24 +28,23 @@ public class Settings
 
 public class SettingsService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        // Enum como nome: reordenar/inserir valores no enum não reinterpreta a
+        // config do usuário (antes, números crus eram aceitos sem validação).
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private readonly string _filePath;
     private Settings? _cached;
 
     public SettingsService()
     {
-        string dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StickyNotes");
-        Directory.CreateDirectory(dir);
-        _filePath = Path.Combine(dir, "settings.json");
+        _filePath = AppPaths.SettingsPath;
     }
 
-    public static string DataDirectory =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StickyNotes");
-
-    public string DatabasePath => Path.Combine(DataDirectory, "notes.db");
+    public string DatabasePath => AppPaths.DatabasePath;
 
     /// <summary>Lê as configurações com cache em memória: o JSON do disco é lido
     /// apenas uma vez por processo (evita I/O a cada abertura de nota).</summary>
@@ -67,14 +72,50 @@ public class SettingsService
         {
             // Config corrompida: recomeça com padrões.
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Sem permissão de leitura: recomeça com padrões.
+        }
 
-        _cached = settings;
-        return settings;
+        _cached = Sanitize(settings);
+        return _cached;
     }
 
-    public void Save(Settings settings)
+    /// <summary>Escrita atômica (temp + move): uma queda no meio não deixa o
+    /// settings.json truncado.</summary>
+    public bool Save(Settings settings)
     {
         _cached = settings;
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(settings, JsonOptions));
+        try
+        {
+            string temp = _filePath + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(settings, JsonOptions));
+            File.Move(temp, _filePath, overwrite: true);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Error("Falha ao salvar as configurações.", ex);
+            return false;
+        }
+    }
+
+    /// <summary>Descarta valores fora do domínio (enum inválido vindo de JSON editado
+    /// à mão) em vez de propagar lixo para a UI.</summary>
+    private static Settings Sanitize(Settings settings)
+    {
+        if (!Enum.IsDefined(settings.DockSide))
+        {
+            settings.DockSide = DockSide.Right;
+        }
+
+        if (!Enum.IsDefined(settings.ThemePreference))
+        {
+            settings.ThemePreference = ThemePreference.System;
+        }
+
+        settings.MonitorDeviceName ??= string.Empty;
+        settings.Version = Settings.CurrentVersion;
+        return settings;
     }
 }

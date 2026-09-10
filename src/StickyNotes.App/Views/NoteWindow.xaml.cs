@@ -43,6 +43,31 @@ public partial class NoteWindow : Window
         PositionNearDeck();
         BodyBox.Focus();
         BodyBox.CaretIndex = BodyBox.Text.Length;
+        PlayEntrance();
+    }
+
+    /// <summary>A nota "pousa" na tela em vez de aparecer seca: assenta de um
+    /// leve encolhimento com fade. A escala é pequena de propósito — a nota é
+    /// papel, não um balão.</summary>
+    private void PlayEntrance()
+    {
+        if (!MotionService.Enabled)
+        {
+            return;
+        }
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        NoteBorder.RenderTransformOrigin = new Point(0.5, 0.5);
+        var scale = new ScaleTransform(0.985, 0.985);
+        NoteBorder.RenderTransform = scale;
+        var settle = new DoubleAnimation(1, TimeSpan.FromMilliseconds(200)) { EasingFunction = ease };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, settle);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, settle);
+
+        Opacity = 0;
+        BeginAnimation(OpacityProperty,
+            new DoubleAnimation(1, TimeSpan.FromMilliseconds(160)) { EasingFunction = ease });
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -67,9 +92,13 @@ public partial class NoteWindow : Window
 
     private void ApplyColor(string color)
     {
-        var brush = NoteColorBrush.Get(color);
+        // Gradiente de papel (luz de cima) + aresta derivada da cor: o volume
+        // vem da luz, não de uma cor chapada.
+        var brush = NoteColorBrush.GetGradient(color);
         NoteBorder.Background = brush;
         Background = brush; // o fundo da janela cobre a área do chrome (cantos recortados)
+        NoteBorder.BorderBrush = NoteColorBrush.GetEdge(color);
+        GrainLayer.Background = NoteColorBrush.GetGrain();
     }
 
     private void OnContentChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)

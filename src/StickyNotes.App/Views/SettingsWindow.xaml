@@ -1,156 +1,130 @@
 <Window x:Class="StickyNotes.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:vm="clr-namespace:StickyNotes.ViewModels"
         Title="Configurações"
         Icon="../Resources/StickyNotes.ico"
-        Width="420"
+        Width="440"
         SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         Background="{DynamicResource WallBrush}"
         ResizeMode="NoResize"
         Topmost="True"
+        TextOptions.TextFormattingMode="Ideal"
+        UseLayoutRounding="True"
+        WindowChrome.WindowChrome="{StaticResource ModernChrome}"
         KeyDown="OnKeyDown">
-    <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="0"
-                            ResizeBorderThickness="0"
-                            CornerRadius="12"
-                            GlassFrameThickness="0"
-                            UseAeroCaptionButtons="False"/>
-    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
         <vm:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <Style TargetType="Button" x:Key="SettingsButtonStyle" BasedOn="{StaticResource FluentButtonStyle}">
-            <Setter Property="MinWidth" Value="96"/>
-            <Setter Property="MinHeight" Value="32"/>
-            <Setter Property="FontSize" Value="12.5"/>
-        </Style>
-
-        <!-- Chip de opção (mesmo visual dos filtros do mural) -->
-        <Style TargetType="RadioButton" x:Key="OptionChipStyle">
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="FontSize" Value="12.5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Chip"
-                                Background="Transparent"
-                                BorderBrush="{DynamicResource ControlStrokeBrush}"
-                                BorderThickness="1"
-                                CornerRadius="14"
-                                Padding="12,5">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Chip" Property="Background" Value="{DynamicResource AccentBrush}"/>
-                                <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chip" Property="Background" Value="{DynamicResource ControlFillHoverBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
-    <Grid Background="{DynamicResource WallBrush}">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Cabeçalho -->
-        <Border Background="{DynamicResource SurfaceAltBrush}"
-                BorderBrush="{DynamicResource DividerBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="20,14">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="⚙"
-                           FontSize="16"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
+        <!-- Cabeçalho: chrome com material -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource ChromeFillBrush}"
+                Padding="20,15"
+                CornerRadius="12,12,0,0">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⚙"
+                               FontSize="15"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+                    <TextBlock Text="Configurações"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="{Binding AppVersion}"
+                           FontSize="11.5"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           HorizontalAlignment="Right"
                            VerticalAlignment="Center"
-                           Margin="0,0,10,0"/>
-                <TextBlock Text="Configurações"
-                           FontSize="15"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           VerticalAlignment="Center"/>
-            </StackPanel>
+                           Typography.NumeralAlignment="Tabular"/>
+            </Grid>
         </Border>
 
-        <StackPanel Grid.Row="1" Margin="20,18,20,20">
-            <!-- Tema -->
-            <TextBlock Text="Tema"
-                       FontSize="12.5"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       Margin="0,0,0,8"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
-                <RadioButton Content="Sistema" Style="{StaticResource OptionChipStyle}"
-                             IsChecked="{Binding ThemeSystem}"/>
-                <RadioButton Content="Claro" Style="{StaticResource OptionChipStyle}"
-                             IsChecked="{Binding ThemeLight}"/>
-                <RadioButton Content="Escuro" Style="{StaticResource OptionChipStyle}"
-                             IsChecked="{Binding ThemeDark}"/>
-            </StackPanel>
+        <StackPanel Grid.Row="1" Margin="20,16,20,18">
 
-            <!-- Lado do deck -->
-            <TextBlock Text="Deck na borda"
-                       FontSize="12.5"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       Margin="0,0,0,8"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
-                <RadioButton Content="Esquerda" Style="{StaticResource OptionChipStyle}"
-                             IsChecked="{Binding DockSideLeft}"/>
-                <RadioButton Content="Direita" Style="{StaticResource OptionChipStyle}"
-                             IsChecked="{Binding DockSideRight}"/>
-            </StackPanel>
+            <!-- Um cartão por grupo de consequência, com fios entre as linhas -->
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <StackPanel Margin="18,16,18,16">
+                        <TextBlock Text="TEMA" Style="{StaticResource TextSectionLabel}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <RadioButton Content="Sistema" Style="{StaticResource SegmentedChipStyle}"
+                                         AutomationProperties.Name="Tema do sistema"
+                                         IsChecked="{Binding ThemeSystem}"/>
+                            <RadioButton Content="Claro" Style="{StaticResource SegmentedChipStyle}"
+                                         AutomationProperties.Name="Tema claro"
+                                         IsChecked="{Binding ThemeLight}"/>
+                            <RadioButton Content="Escuro" Style="{StaticResource SegmentedChipStyle}"
+                                         AutomationProperties.Name="Tema escuro"
+                                         IsChecked="{Binding ThemeDark}"/>
+                        </StackPanel>
+                    </StackPanel>
 
-            <!-- Monitor do deck (só aparece com mais de um monitor) -->
-            <StackPanel Visibility="{Binding HasMultipleMonitors, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Margin="0,0,0,18">
-                <TextBlock Text="Monitor do deck"
-                           FontSize="12.5"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Margin="0,0,0,8"/>
-                <ComboBox ItemsSource="{Binding Monitors}"
-                          SelectedItem="{Binding SelectedMonitor}"
-                          DisplayMemberPath="DisplayName"
-                          FontSize="12.5"
-                          Padding="8,4"
-                          HorizontalAlignment="Left"
-                          MinWidth="240"/>
-            </StackPanel>
+                    <Border Height="1" Background="{DynamicResource DividerBrush}"/>
 
-            <!-- Iniciar com o Windows -->
-            <CheckBox Content="Iniciar com o Windows"
-                      IsChecked="{Binding StartWithWindows}"
-                      FontSize="12.5"
-                      Foreground="{DynamicResource TextPrimaryBrush}"
-                      VerticalAlignment="Center"
-                      Margin="0,0,0,18"/>
+                    <StackPanel Margin="18,16,18,16">
+                        <TextBlock Text="DECK NA BORDA" Style="{StaticResource TextSectionLabel}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <RadioButton Content="Esquerda" Style="{StaticResource SegmentedChipStyle}"
+                                         AutomationProperties.Name="Deck na esquerda"
+                                         IsChecked="{Binding DockSideLeft}"/>
+                            <RadioButton Content="Direita" Style="{StaticResource SegmentedChipStyle}"
+                                         AutomationProperties.Name="Deck na direita"
+                                         IsChecked="{Binding DockSideRight}"/>
+                        </StackPanel>
+                    </StackPanel>
 
-            <!-- Ações -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Fechar" Style="{StaticResource SettingsButtonStyle}"
+                    <StackPanel Visibility="{Binding HasMultipleMonitors, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Border Height="1" Background="{DynamicResource DividerBrush}"/>
+                        <StackPanel Margin="18,16,18,16">
+                            <TextBlock Text="MONITOR DO DECK" Style="{StaticResource TextSectionLabel}"/>
+                            <ComboBox ItemsSource="{Binding Monitors}"
+                                      SelectedItem="{Binding SelectedMonitor}"
+                                      DisplayMemberPath="DisplayName"
+                                      HorizontalAlignment="Left"
+                                      MinWidth="240"
+                                      Margin="0,10,0,0"
+                                      AutomationProperties.Name="Monitor do deck"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border Height="1" Background="{DynamicResource DividerBrush}"/>
+
+                    <Grid Margin="18,15,18,15">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="INICIALIZAÇÃO" Style="{StaticResource TextSectionLabel}"/>
+                            <TextBlock Text="Abre junto com o Windows"
+                                       FontSize="12.5"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <CheckBox IsChecked="{Binding StartWithWindows}"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Center"
+                                  AutomationProperties.Name="Iniciar com o Windows"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Content="Fechar" Style="{StaticResource SecondaryActionButtonStyle}"
                         Margin="0,0,8,0"
                         Click="OnCancelClick"/>
-                <Button Content="Salvar" Style="{StaticResource SettingsButtonStyle}"
+                <Button Content="Salvar" Style="{StaticResource PrimaryActionButtonStyle}"
                         Command="{Binding SaveCommand}"
-                        Background="{DynamicResource AccentBrush}"
-                        Foreground="{DynamicResource TextOnAccentBrush}"
-                        BorderBrush="{DynamicResource AccentBrush}"
                         IsDefault="True"
                         Click="OnSaveClick"/>
             </StackPanel>

@@ -14,8 +14,9 @@ public static class ScreenHelper
 {
     /// <summary>Enumeração de monitores é P/Invoke caro por chamada (o App resolve o
     /// monitor a cada nota aberta/troca do deck) e o resultado só muda ao plugarem
-    /// ou trocarem monitores: cacheia e invalida no DisplaySettingsChanged.</summary>
-    private static IReadOnlyList<MonitorInfo>? _cache;
+    /// ou trocarem monitores: cacheia e invalida no DisplaySettingsChanged.
+    /// Volátil: a invalidação pode vir da thread do SystemEvents.</summary>
+    private static volatile IReadOnlyList<MonitorInfo>? _cache;
 
     static ScreenHelper()
     {

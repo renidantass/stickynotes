@@ -32,23 +32,40 @@ public partial class NotePreviewWindow : Window
         Left = position.X;
         Top = position.Y;
 
-        // Entrada suave: fade + leve deslize (respeita reduced motion)
+        // Entrada suave: sobe um pouco e assenta, respeitando reduced motion
         if (MotionService.Enabled)
         {
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            PreviewBorder.RenderTransformOrigin = new Point(0.5, 0.5);
+            var transform = new TransformGroup();
+            var lift = new TranslateTransform(0, 8);
+            var scale = new ScaleTransform(0.98, 0.98);
+            transform.Children.Add(scale);
+            transform.Children.Add(lift);
+            PreviewBorder.RenderTransform = transform;
+
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty,
+                new DoubleAnimation(1, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease });
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty,
+                new DoubleAnimation(1, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease });
+            lift.BeginAnimation(TranslateTransform.YProperty,
+                new DoubleAnimation(0, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease });
+
             Opacity = 0;
-            var fade = new DoubleAnimation(1, TimeSpan.FromMilliseconds(160))
-            {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
-            };
-            BeginAnimation(OpacityProperty, fade);
+            BeginAnimation(OpacityProperty,
+                new DoubleAnimation(1, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
         }
     }
 
     private void ApplyColor(string color)
     {
-        var brush = NoteColorBrush.Get(color);
+        // Mesmo material da nota: gradiente de papel + grão + aresta da cor.
+        var brush = NoteColorBrush.GetGradient(color);
         PreviewBorder.Background = brush;
         Background = brush; // o fundo da janela cobre a área do chrome (cantos recortados)
+        PreviewBorder.BorderBrush = NoteColorBrush.GetEdge(color);
+        GrainLayer.Background = NoteColorBrush.GetGrain();
         TapeBorder.Background = NoteColorBrush.GetTape();
         FoldPath.Fill = NoteColorBrush.GetFold(color);
     }

@@ -147,7 +147,7 @@
 <p>Sem conta, sem nuvem, sem vazamento. O conteúdo fica num SQLite no seu PC, criptografado pelo DPAPI do Windows — a mesma proteção que guarda suas credenciais.</p>
 <ul>
 <li>Funciona com Wi-Fi desligado, no avião, no sítio. Para sempre.</li>
-<li>Quer levar embora? Copie a pasta, pronto. Seus dados, suas regras.</li>
+<li>Backup é copiar a pasta — os dados são seus. O conteúdo cifrado só é legível na sua conta do Windows.</li>
 </ul>
 </article>
 </div>
@@ -193,11 +193,11 @@
 <div>
 <p class="kicker">Privacidade radical</p>
 <h2 id="priv-title">Sem nuvem. Sem conta.<br><span class="hl">Sem ninguém lendo por cima do ombro.</span></h2>
-<p>Suas listas de compra, senhas de wifi, ideias de negócio e desabafos ficam num arquivo <strong>notes.db</strong> dentro do seu AppData — com o texto criptografado pela mesma tecnologia que o Windows usa para proteger suas credenciais.</p>
+<p>Suas listas de compra, senhas de wifi, ideias de negócio e desabafos ficam num arquivo <strong>notes.db</strong> na pasta local de dados do app (%LocalAppData%\StickyNotes) — com o texto criptografado pela mesma tecnologia que o Windows usa para proteger suas credenciais.</p>
 <ul class="check">
 <li>O título fica legível para busca e deck rápidos; o conteúdo vai cifrado.</li>
 <li>Funciona com Wi-Fi desligado, no avião, no sítio. Para sempre.</li>
-<li>Quer levar embora? Copie a pasta, pronto. Seus dados, suas regras.</li>
+<li>Backup é copiar a pasta — os dados são seus. O conteúdo cifrado só é legível na sua conta do Windows.</li>
 </ul>
 </div>
 <div class="privacy-card">
@@ -266,7 +266,7 @@
 </details>
 <details>
 <summary>Onde ficam minhas notas?</summary>
-<div class="faq-body"><p>Em <strong>%AppData%\StickyNotes\notes.db</strong> (SQLite), com o conteúdo criptografado via DPAPI. Faça backup copiando essa pasta.</p></div>
+<div class="faq-body"><p>Em <strong>%LocalAppData%\StickyNotes\notes.db</strong> (SQLite), com o conteúdo criptografado via DPAPI. Para backup, copie essa pasta e restaure na mesma conta do Windows — a chave é do seu usuário, então o conteúdo cifrado não abre em outra conta ou máquina.</p></div>
 </details>
 <details>
 <summary>Funciona com dois monitores?</summary>
@@ -278,7 +278,7 @@
 </details>
 <details>
 <summary>Tem como recuperar nota apagada?</summary>
-<div class="faq-body"><p>Notas excluídas vão embora de verdade (sem lixeira, por enquanto). Para “guardar sem mostrar”, use Arquivar 🗂 em vez de excluir.</p></div>
+<div class="faq-body"><p>Não há lixeira (por enquanto): a nota é removida do banco. Para “guardar sem mostrar”, use Arquivar 🗂 em vez de excluir.</p></div>
 </details>
 </div>
 </section>

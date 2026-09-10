@@ -17,12 +17,15 @@ public partial class DeckWindow : Window
     private const double CollapsedWidth = 24;
     private const double CollapsedHeight = 30;
     private const double ExpandedWidth = 66;
-    private const double HoverDelayMs = 200;
+    // Latência de hover curta: 200ms fazia o deck parecer travado antes de reagir.
+    // 90ms ainda evita disparo acidental ao passar o mouse de raspão.
+    private const double HoverDelayMs = 90;
     private const double MaxMenuHeight = 480;
-    private const double PreviewDelayMs = 300;
+    private const double PreviewDelayMs = 200;
     private const double PreviewWidth = 280;
     private const double PreviewGap = 6;
-    private const double IdleCheckIntervalMs = 120;
+    // Vigia mais frequente = recolhimento mais responsivo (2 ticks ≈ 160ms).
+    private const double IdleCheckIntervalMs = 80;
     private const int ToggleDeckHotkeyId = 0xA1;
 
     // Ctrl+Alt+S: alterna o deck
@@ -39,6 +42,7 @@ public partial class DeckWindow : Window
     private NotePreviewWindow? _previewWindow;
     private Note? _previewNote;
     private FrameworkElement? _previewTab;
+    private HwndSource? _hwndSource;
     private double _expandedHeight = CollapsedHeight;
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -167,8 +171,15 @@ public partial class DeckWindow : Window
 
         // Hotkey global Ctrl+Alt+S para expandir/recolher o deck
         var handle = new WindowInteropHelper(this).Handle;
-        RegisterHotKey(handle, ToggleDeckHotkeyId, ModControl | ModAlt, 0x53 /* S */);
-        HwndSource.FromHwnd(handle)?.AddHook(WndProc);
+        if (!RegisterHotKey(handle, ToggleDeckHotkeyId, ModControl | ModAlt, 0x53 /* S */))
+        {
+            // Falha silenciosa deixava o atalho "morto" sem nenhum sinal (outro app
+            // pode já ter registrado a combinação).
+            AppLog.Warn("Não foi possível registrar o atalho global Ctrl+Alt+S (já em uso?).");
+        }
+
+        _hwndSource = HwndSource.FromHwnd(handle);
+        _hwndSource?.AddHook(WndProc);
 
         // Posicionamento inicial mínimo (a altura real é aplicada no Loaded).
         var workArea = WorkArea;
@@ -288,6 +299,11 @@ public partial class DeckWindow : Window
             UnregisterHotKey(handle, ToggleDeckHotkeyId);
         }
 
+        // Remove o hook explicitamente: o deck é recriado a cada troca de lado/monitor,
+        // e o delegate captura esta janela — não depender do teardown do HwndSource.
+        _hwndSource?.RemoveHook(WndProc);
+        _hwndSource = null;
+
         base.OnClosed(e);
     }
 
@@ -311,6 +327,14 @@ public partial class DeckWindow : Window
     /// janela estreita colada à borda da tela.</summary>
     private void ApplyPillState()
     {
+        // Ressincroniza o flag da ViewModel: o deck é recriado a cada troca de
+        // lado/monitor e a MainViewModel é a mesma. Sem isto, um deck novo nascia
+        // em pill mas com IsExpanded=true, e o Expand() (que sai cedo nesse caso)
+        // nunca mais abria o menu.
+        _viewModel.IsExpanded = false;
+        MenuPanel.BeginAnimation(OpacityProperty, null);
+        MenuPanel.Opacity = 0;
+        MenuPanel.RenderTransform = Transform.Identity;
         MenuPanel.Visibility = Visibility.Collapsed;
         ExpandButton.Visibility = Visibility.Visible;
         Width = CollapsedWidth;
@@ -702,9 +726,13 @@ public partial class DeckWindow : Window
         NoteCountBadge.Visibility = Visibility.Collapsed;
         EmptyIndicator.Visibility = Visibility.Collapsed;
 
+        // O menu não aparece seco enquanto a janela alarga: ele entra deslizando
+        // da borda com fade, então a expansão lê como um movimento só.
+        FadeMenuIn();
+
         _idleCheckTimer.Start();
         _idleCheckMisses = 0;
-        AnimateWidth(ExpandedWidth);
+        AnimateWidth(ExpandedWidth, expanding: true);
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, UpdateScrollIndicators);
     }
 
@@ -721,34 +749,109 @@ public partial class DeckWindow : Window
         ClosePreview();
         _previewNote = null;
 
-        // Recolhe: menu some, pill volta, janela afina.
-        MenuPanel.Visibility = Visibility.Collapsed;
+        // Recolhe: o menu sai com fade (a janela afina junto) e a pill volta.
+        FadeMenuOut();
         ExpandButton.Visibility = Visibility.Visible;
         ScrollUpIndicator.Visibility = Visibility.Collapsed;
         ScrollDownIndicator.Visibility = Visibility.Collapsed;
         UpdateEmptyState();
 
-        AnimateWidth(CollapsedWidth);
+        AnimateWidth(CollapsedWidth, expanding: false);
     }
 
-    /// <summary>Anima a largura da janela e ajusta o Left para manter a borda fixa.</summary>
-    private void AnimateWidth(double targetWidth)
+    /// <summary>Entrada do menu: fade + deslize curto a partir da borda onde o
+    /// deck está encostado. Começa depois do primeiro frame da animação de
+    /// largura, para o conteúdo entrar junto com o espaço que o recebe.</summary>
+    private void FadeMenuIn()
+    {
+        if (!MotionService.Enabled)
+        {
+            MenuPanel.BeginAnimation(OpacityProperty, null);
+            MenuPanel.Opacity = 1;
+            MenuPanel.RenderTransform = Transform.Identity;
+            return;
+        }
+
+        double from = DockSide == DockSide.Right ? 12 : -12;
+        var slide = new TranslateTransform(from, 0);
+        MenuPanel.RenderTransform = slide;
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var begin = TimeSpan.FromMilliseconds(50);
+
+        MenuPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170))
+        {
+            BeginTime = begin,
+            EasingFunction = ease,
+        });
+        slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(220))
+        {
+            BeginTime = begin,
+            EasingFunction = ease,
+        });
+    }
+
+    /// <summary>Saída do menu: fade rápido e só então colapsa. O colapso é adiado
+    /// até o fade terminar, senão o menu some num frame (o que era metade da
+    /// sensação de interface "agarrada"). Se o deck reabrir no meio, o guard
+    /// impede que o colapso atrase a reabertura.</summary>
+    private void FadeMenuOut()
+    {
+        if (!MotionService.Enabled)
+        {
+            MenuPanel.BeginAnimation(OpacityProperty, null);
+            MenuPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(100))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn },
+        };
+        fade.Completed += (_, _) =>
+        {
+            if (!_viewModel.IsExpanded)
+            {
+                MenuPanel.Visibility = Visibility.Collapsed;
+            }
+        };
+        MenuPanel.BeginAnimation(OpacityProperty, fade);
+    }
+
+    /// <summary>Anima a largura da janela e ajusta o Left para manter a borda fixa.
+    /// Expandir é mais lento que recolher (a saída roda a ~70% da entrada): a
+    /// chegada pede peso, a saída pede pressa.</summary>
+    private void AnimateWidth(double targetWidth, bool expanding)
     {
         bool dockRight = DockSide == DockSide.Right;
         double edge = dockRight
             ? WorkArea.Right - targetWidth
             : WorkArea.Left;
 
-        var widthAnim = new DoubleAnimation(targetWidth, TimeSpan.FromMilliseconds(160))
+        // Reduced motion: sem animação, o estado final é aplicado direto.
+        if (!MotionService.Enabled)
         {
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+            BeginAnimation(WidthProperty, null);
+            BeginAnimation(LeftProperty, null);
+            Width = targetWidth;
+            Left = edge;
+            return;
+        }
+
+        // Expandir leva mais que recolher: chegar pede peso, sair pede pressa.
+        var duration = TimeSpan.FromMilliseconds(expanding ? 190 : 120);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var widthAnim = new DoubleAnimation(targetWidth, duration)
+        {
+            EasingFunction = ease,
         };
         BeginAnimation(WidthProperty, widthAnim);
         Width = targetWidth;
 
-        var leftAnim = new DoubleAnimation(edge, TimeSpan.FromMilliseconds(160))
+        var leftAnim = new DoubleAnimation(edge, duration)
         {
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+            EasingFunction = ease,
         };
         BeginAnimation(LeftProperty, leftAnim);
         Left = edge;

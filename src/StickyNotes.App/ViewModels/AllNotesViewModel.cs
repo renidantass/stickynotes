@@ -18,9 +18,10 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
     private readonly INavigationService _navigation;
     private readonly IConfirmationService _confirmation;
 
-    private readonly List<Note> _all;
+    private readonly List<Note> _all = [];
     private string _searchText = string.Empty;
     private ArchiveFilter _filter = ArchiveFilter.All;
+    private bool _isLoading = true;
     private readonly DispatcherTimer _searchDebounce;
 
     public AllNotesViewModel(INoteRepository repository, NotesCoordinator coordinator,
@@ -30,8 +31,6 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
         _coordinator = coordinator;
         _navigation = navigation;
         _confirmation = confirmation;
-
-        _all = repository.GetAll();
 
         // Busca com debounce (200ms): o refresh recria os containers visíveis —
         // agrupar a digitação evita refazer o mural a cada tecla.
@@ -51,8 +50,20 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
 
         // Criação/arquivamento/exclusão vindas de outras janelas atualizam o mural.
         _coordinator.NotesChanged += OnCoordinatorNotesChanged;
+        // Edição de conteúdo (título/corpo/cor) chega por um evento leve: atualiza
+        // a instância sem recarregar o banco inteiro a cada flush de digitação.
+        _coordinator.NoteSaved += OnNoteSaved;
 
         Refresh();
+    }
+
+    /// <summary>Carrega as notas do banco. É chamado só quando a janela já está
+    /// visível: buscar todas as notas decripta os corpos de uma vez, então fazer
+    /// isso no construtor adiava o aparecimento do mural.</summary>
+    public void Load()
+    {
+        _isLoading = false;
+        Reload();
     }
 
     /// <summary>Desassina o coordinator (o mural é aberto/fechado sob demanda; sem
@@ -62,15 +73,49 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
     {
         _searchDebounce.Stop();
         _coordinator.NotesChanged -= OnCoordinatorNotesChanged;
+        _coordinator.NoteSaved -= OnNoteSaved;
         GC.SuppressFinalize(this);
     }
 
     private void OnCoordinatorNotesChanged(object? sender, EventArgs e) => Reload();
 
+    /// <summary>Atualiza a instância do mural correspondente à nota salva no editor
+    /// (o mural guarda instâncias próprias). Refaz o filtro apenas quando a busca
+    /// ativa pode mudar de resultado — caso contrário o binding cuida do resto.</summary>
+    private void OnNoteSaved(Note note)
+    {
+        var target = _all.Find(n => n.Id == note.Id);
+        if (target is null)
+        {
+            return;
+        }
+
+        target.Title = note.Title;
+        target.Body = note.Body;
+        target.Color = note.Color;
+        target.UpdatedAt = note.UpdatedAt;
+
+        if (!string.IsNullOrEmpty(_searchText))
+        {
+            Refresh();
+        }
+    }
+
     public ObservableCollection<Note> Notes { get; } = [];
 
-    /// <summary>Verdadeiro quando há notas visíveis (para o estado vazio do mural).</summary>
-    public bool HasNotes => Notes.Count > 0;
+    /// <summary>Estado vazio só depois que a carga terminou: sem isto, o mural
+    /// pisca "nenhuma nota" no frame em que abre, antes de os dados chegarem.</summary>
+    public bool ShowEmptyState => !_isLoading && Notes.Count == 0;
+
+    /// <summary>Uma parede sem notas e um filtro sem resultado são situações
+    /// diferentes; o estado vazio precisa dizer o que fazer em cada uma.</summary>
+    public string EmptyTitle => IsFiltered ? "Nada encontrado" : "Nenhuma nota aqui";
+
+    public string EmptyHint => IsFiltered
+        ? "Tente outro termo ou mude o filtro."
+        : "Suas notas aparecem nesta parede. Crie a primeira para começar.";
+
+    private bool IsFiltered => !string.IsNullOrEmpty(_searchText.Trim()) || _filter != ArchiveFilter.All;
 
     public string SearchText
     {
@@ -122,7 +167,9 @@ public class AllNotesViewModel : ViewModelBase, IDisposable
         }
 
         OnPropertyChanged(nameof(Notes));
-        OnPropertyChanged(nameof(HasNotes));
+        OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptyHint));
 
         bool Matches(Note n)
         {

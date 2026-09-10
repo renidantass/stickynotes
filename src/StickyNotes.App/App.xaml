@@ -10,25 +10,17 @@
             <FontFamily x:Key="AppFont">Segoe UI Variable, Segoe UI</FontFamily>
 
             <!-- Chrome custom estilo Windows 11: cantos arredondados + borda sutil,
-                 mantendo sombra, resize e snap nativos do sistema -->
+                 mantendo sombra, resize e snap nativos do sistema. O raio é o mesmo
+                 das superfícies internas, para os cantos aninhados concordarem. -->
             <WindowChrome x:Key="ModernChrome"
                           CaptionHeight="40"
                           ResizeBorderThickness="6"
-                          CornerRadius="10"
+                          CornerRadius="12"
                           GlassFrameThickness="0"
                           UseAeroCaptionButtons="False"/>
 
-            <!-- Estilo base de botão Fluent (sem template custom, usa o nativo) -->
-            <Style TargetType="Button" x:Key="FluentButtonStyle">
-                <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
-                <Setter Property="FontSize" Value="13"/>
-                <Setter Property="Padding" Value="14,7"/>
-                <Setter Property="Background" Value="{DynamicResource ControlFillBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeBrush}"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Cursor" Value="Hand"/>
-            </Style>
+            <!-- FluentButtonStyle e os estilos de controle vivem em
+                 Resources/Styles.xaml — uma única definição por papel. -->
 
             <Style TargetType="RadioButton">
                 <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>

@@ -74,15 +74,16 @@ public class NoteEditorViewModel : ViewModelBase
         Save();
     }
 
-    /// <summary>Salva agora (usado no fechamento da janela, no debounce e no flush).</summary>
-    public void Save()
+    /// <summary>Salva agora (usado no fechamento da janela, no debounce e no flush).
+    /// Retorna false quando a nota não existe mais (excluída em outra janela).</summary>
+    public bool Save()
     {
         _saveTimer.Stop();
         _flushTimer.Stop();
         _note.Title = Title.Trim();
         _note.Body = Body;
         _note.Color = Color;
-        _coordinator.Save(_note);
+        return _coordinator.Save(_note);
     }
 
     /// <summary>Arquiva a nota (torna inativa e a remove do deck).</summary>

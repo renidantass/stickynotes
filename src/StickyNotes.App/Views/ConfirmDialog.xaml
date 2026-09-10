@@ -4,42 +4,37 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Confirmação"
         Icon="../Resources/StickyNotes.ico"
-        Width="380"
+        Width="400"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
-        Background="{DynamicResource SurfaceBrush}"
+        Background="{DynamicResource SurfaceElevatedBrush}"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
+        TextOptions.TextFormattingMode="Ideal"
         KeyDown="OnKeyDown">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"
                             ResizeBorderThickness="0"
-                            CornerRadius="12"
+                            CornerRadius="16"
                             GlassFrameThickness="0"
                             UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
 
-    <Window.Resources>
-        <Style TargetType="Button" x:Key="DialogButtonStyle" BasedOn="{StaticResource FluentButtonStyle}">
-            <Setter Property="MinWidth" Value="88"/>
-            <Setter Property="MinHeight" Value="32"/>
-            <Setter Property="Padding" Value="14,6"/>
-            <Setter Property="FontSize" Value="12.5"/>
-        </Style>
-    </Window.Resources>
-
-    <Border Background="{DynamicResource SurfaceBrush}"
-            BorderBrush="{DynamicResource ControlStrokeBrush}"
+    <!-- Plano de atenção: a superfície mais elevada do app. Raio maior e
+         superfície própria para deixar claro que está acima do conteúdo. -->
+    <Border x:Name="DialogSurface"
+            Background="{DynamicResource SurfaceElevatedBrush}"
+            BorderBrush="{DynamicResource SeparatorBrush}"
             BorderThickness="1"
-            Padding="20,18">
+            Padding="22,20">
         <StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                <Border Width="34" Height="34"
-                        CornerRadius="17"
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+                <Border Width="36" Height="36"
+                        CornerRadius="{StaticResource RadiusPill}"
                         Background="{DynamicResource DangerBackgroundBrush}"
                         VerticalAlignment="Top"
-                        Margin="0,0,12,0">
+                        Margin="0,0,13,0">
                     <TextBlock Text="&#xE7BA;"
                                FontFamily="Segoe Fluent Icons"
                                FontSize="15"
@@ -55,23 +50,23 @@
                     <TextBlock x:Name="MessageText"
                                TextWrapping="Wrap"
                                FontSize="12.5"
+                               LineHeight="18"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,4,0,0"/>
+                               Margin="0,5,0,0"/>
                 </StackPanel>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Cancelar"
-                        Style="{StaticResource DialogButtonStyle}"
+                        Style="{StaticResource SecondaryActionButtonStyle}"
+                        MinWidth="92"
                         Margin="0,0,8,0"
                         IsCancel="True"
                         Click="OnCancelClick"/>
                 <Button x:Name="ConfirmButton"
                         Content="Excluir"
-                        Style="{StaticResource DialogButtonStyle}"
-                        Background="{DynamicResource DangerBrush}"
-                        Foreground="White"
-                        BorderBrush="{DynamicResource DangerBrush}"
+                        Style="{StaticResource DestructiveActionButtonStyle}"
+                        MinWidth="92"
                         IsDefault="True"
                         Click="OnConfirmClick"/>
             </StackPanel>

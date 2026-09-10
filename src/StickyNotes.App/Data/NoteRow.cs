@@ -11,4 +11,9 @@ internal sealed class NoteRow
     public bool IsArchived { get; init; }
     public string CreatedAt { get; init; } = string.Empty;
     public string UpdatedAt { get; init; } = string.Empty;
+
+    /// <summary>Contador incrementado a cada escrita: é a chave de validade do cache
+    /// de corpos (um timestamp de DateTime.Now pode repetir entre duas escritas
+    /// rápidas e servir corpo obsoleto).</summary>
+    public long Version { get; init; }
 }

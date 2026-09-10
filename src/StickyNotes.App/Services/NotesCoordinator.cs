@@ -22,8 +22,14 @@ public class NotesCoordinator
 
     public int NoteCount => _notes.Count;
 
-    /// <summary>Mudança estrutural: criar, arquivar, desarquivar ou excluir.</summary>
+    /// <summary>Mudança estrutural: criar, arquivar, desarquivar ou excluir.
+    /// As superfícies recarregam a lista ao receber.</summary>
     public event EventHandler? NotesChanged;
+
+    /// <summary>Nota salva (edição de título/corpo/cor). Evento leve e separado do
+    /// NotesChanged: sem ele, um reload a cada flush de digitação re-decriptava todas
+    /// as notas do mural várias vezes por minuto.</summary>
+    public event Action<Note>? NoteSaved;
 
     public void Reload()
     {
@@ -54,9 +60,18 @@ public class NotesCoordinator
         return color;
     }
 
-    public void Save(Note note)
+    /// <summary>Persiste a edição. Retorna false quando a nota foi excluída em outra
+    /// janela (o UPDATE afeta 0 linhas) — nesse caso recarrega para as superfícies
+    /// refletirem a exclusão em vez de "salvar" no vazio silenciosamente.</summary>
+    public bool Save(Note note)
     {
-        _repository.Update(note);
+        if (!_repository.Update(note))
+        {
+            AppLog.Warn($"A nota {note.Id} não existe mais ao salvar; recarregando a lista.");
+            Reload();
+            return false;
+        }
+
         // Atualiza o título/cor em memória sem re-consultar o banco (zero I/O).
         // A posição na lista NUNCA muda ao salvar — ordem estável preservada.
         // O corpo NÃO é copiado: as instâncias do deck ficam só com metadados
@@ -67,6 +82,9 @@ public class NotesCoordinator
             _notes[index].Title = note.Title;
             _notes[index].Color = note.Color;
         }
+
+        NoteSaved?.Invoke(note);
+        return true;
     }
 
     public void ToggleArchive(Note note)
@@ -78,8 +96,8 @@ public class NotesCoordinator
     /// ações que sabem o estado desejado, como "Arquivar" na janela da nota.</summary>
     public void SetArchived(Note note, bool archived)
     {
+        _repository.SetArchived(note.Id, archived);
         note.IsArchived = archived;
-        _repository.Update(note);
         Reload();
     }
 

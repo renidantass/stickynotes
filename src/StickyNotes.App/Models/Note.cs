@@ -25,6 +25,11 @@ public class Note : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public long Id { get; set; }
+
+    /// <summary>Versão da linha no banco (incrementa a cada escrita). Usada pelo
+    /// repositório para invalidar o cache de corpos decriptados.</summary>
+    public long Version { get; set; }
+
     public bool IsArchived { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;

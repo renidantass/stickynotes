@@ -11,11 +11,13 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         ShowActivated="False"
+        TextOptions.TextFormattingMode="Ideal"
+        UseLayoutRounding="True"
         KeyDown="OnDeckKeyDown">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"
                             ResizeBorderThickness="0"
-                            CornerRadius="10"
+                            CornerRadius="12"
                             GlassFrameThickness="0"
                             UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
@@ -24,9 +26,12 @@
         <vm:NoteGradientConverter x:Key="NoteGradientConverter"/>
     </Window.Resources>
 
+    <!-- O deck é o chrome do app: uma cápsula flutuante que encosta na borda.
+         O material vem do gradiente + realce de 1px no topo, nunca de uma
+         cor chapada. -->
     <Border x:Name="DeckBorder"
             Background="{DynamicResource DeckBackgroundBrush}"
-            CornerRadius="10"
+            CornerRadius="{StaticResource RadiusLG}"
             BorderBrush="{DynamicResource DeckBorderBrush}"
             BorderThickness="1"
             Padding="2"
@@ -34,11 +39,19 @@
             MouseLeave="OnMouseLeave">
 
         <Grid>
-            <!-- Estado compacto: pilha de fatias coloridas (uma por nota) + badge -->
+            <!-- Realce especular da aresta superior: insinuado nas pontas,
+                 para não encostar nos cantos arredondados. -->
+            <Border Height="1" VerticalAlignment="Top" Margin="9,0,9,0"
+                    CornerRadius="1"
+                    Background="{DynamicResource ChromeHighlightBrush}"
+                    IsHitTestVisible="False"/>
+
+            <!-- ============ Estado compacto: pill ============ -->
             <Grid>
                 <Button x:Name="ExpandButton"
                         Style="{StaticResource DeckPillButtonStyle}"
                         ToolTip="Criar primeira nota"
+                        AutomationProperties.Name="Criar primeira nota"
                         Click="OnExpandClick">
                     <ItemsControl ItemsSource="{Binding Notes}">
                         <ItemsControl.ItemsPanel>
@@ -48,8 +61,12 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="1,0.5"
-                                        CornerRadius="3">
+                                <!-- Fatia de papel: gradiente + fio de cabelo,
+                                     para empilhar como uma pilha de post-its -->
+                                <Border Margin="2,1"
+                                        CornerRadius="2"
+                                        BorderBrush="#14000000"
+                                        BorderThickness="1">
                                     <Border.Background>
                                         <Binding Path="Color" Converter="{StaticResource NoteGradientConverter}"/>
                                     </Border.Background>
@@ -59,39 +76,39 @@
                     </ItemsControl>
                 </Button>
 
-                <!-- Estado vazio (pill): ícone de nova nota — clique cria a primeira nota -->
+                <!-- Estado vazio: a pill vazia é um alvo único de clique -->
                 <TextBlock x:Name="EmptyIndicator"
                            Text="✎"
                            FontSize="12"
-                           Foreground="#BBBBBB"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            IsHitTestVisible="False"
                            Visibility="Collapsed"/>
 
-                <!-- Badge com o número de notas -->
                 <Border x:Name="NoteCountBadge"
                         Background="{DynamicResource BadgeBackgroundBrush}"
-                        CornerRadius="7"
+                        CornerRadius="{StaticResource RadiusPill}"
                         Padding="0"
-                        Width="16" Height="16"
+                        Width="17" Height="17"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
                         Margin="0,0,0,4"
                         IsHitTestVisible="False">
                     <TextBlock Text="{Binding NoteCount}"
                                Foreground="{DynamicResource BadgeForegroundBrush}"
-                               FontSize="9"
-                               FontWeight="Bold"
+                               FontSize="9.5"
+                               FontWeight="SemiBold"
+                               Typography.NumeralAlignment="Tabular"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"/>
                 </Border>
             </Grid>
 
-            <!-- Estado expandido: abas verticais com gradiente (mesma linguagem da pill) -->
+            <!-- ============ Estado expandido: abas + ações ============ -->
             <Grid x:Name="MenuPanel"
                   Visibility="Collapsed"
-                  Margin="3,6,3,12"
+                  Margin="3,7,3,7"
                   HorizontalAlignment="Center">
 
                 <Grid.RowDefinitions>
@@ -107,93 +124,117 @@
                     <ItemsControl x:Name="NotesItemsControl" ItemsSource="{Binding Notes}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <!-- Aba vertical: gradiente da nota + título rotacionado -->
+                                <!-- Aba: uma folha em pé. A fita no topo e o canto
+                                     dobrado são o que a identifica como papel. -->
                                 <Button x:Name="TabButton"
                                         Command="{Binding DataContext.OpenNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="{Binding}"
                                         Style="{StaticResource NoteTabStyle}"
-                                        Margin="0,3"
+                                        Margin="0,2"
                                         HorizontalContentAlignment="Center"
                                         ToolTip="{Binding Title}"
+                                        AutomationProperties.Name="{Binding Title}"
                                         MouseEnter="OnNoteTabMouseEnter"
                                         MouseLeave="OnNoteTabMouseLeave">
-                                    <Border Width="52"
-                                            MinHeight="58"
-                                            CornerRadius="8"
-                                            Margin="0">
-                                        <Border.Background>
-                                            <Binding Path="Color" Converter="{StaticResource NoteGradientConverter}"/>
-                                        </Border.Background>
-                                        <Grid>
-                                            <TextBlock Text="{Binding Title}"
-                                                       FontSize="11.5"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource NoteTextPrimaryBrush}"
-                                                       VerticalAlignment="Center"
-                                                       HorizontalAlignment="Center"
-                                                       Margin="0,5"
-                                                       MaxWidth="180"
-                                                       MaxHeight="160">
-                                                <TextBlock.LayoutTransform>
-                                                    <RotateTransform Angle="-90"/>
-                                                </TextBlock.LayoutTransform>
-                                            </TextBlock>
-                                        </Grid>
-                                    </Border>
+                                    <Grid>
+                                        <Border Width="52"
+                                                MinHeight="58"
+                                                CornerRadius="7"
+                                                BorderBrush="#14000000"
+                                                BorderThickness="1">
+                                            <Border.Background>
+                                                <Binding Path="Color" Converter="{StaticResource NoteGradientConverter}"/>
+                                            </Border.Background>
+                                            <Grid>
+                                                <!-- Fita -->
+                                                <Border Width="24" Height="9"
+                                                        CornerRadius="1"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Top"
+                                                        Margin="0,-4,0,0"
+                                                        Background="{DynamicResource TapeBrush}"
+                                                        IsHitTestVisible="False"/>
+                                                <!-- Canto dobrado -->
+                                                <Path Data="M 0,9 L 9,9 L 9,0 Z"
+                                                      HorizontalAlignment="Right"
+                                                      VerticalAlignment="Bottom"
+                                                      Fill="{DynamicResource FoldShadeBrush}"
+                                                      IsHitTestVisible="False"/>
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource NoteTextPrimaryBrush}"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,7,0,5"
+                                                           MaxWidth="180"
+                                                           MaxHeight="160">
+                                                    <TextBlock.LayoutTransform>
+                                                        <RotateTransform Angle="-90"/>
+                                                    </TextBlock.LayoutTransform>
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
 
-                <!-- Indicadores de scroll: setas sobre o viewport quando há mais
-                     abas acima/abaixo do que cabe no deck (muitas notas) -->
+                <!-- Indicadores de rolagem -->
                 <Border x:Name="ScrollUpIndicator"
                         Grid.Row="0"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Top"
-                        Margin="0,2,0,0"
-                        Background="#B3000000"
-                        CornerRadius="8"
+                        Margin="0,1,0,0"
+                        Background="{DynamicResource BadgeBackgroundBrush}"
+                        CornerRadius="{StaticResource RadiusPill}"
                         Padding="5,1"
                         IsHitTestVisible="False"
                         Visibility="Collapsed">
-                    <TextBlock Text="▲" FontSize="8" Foreground="White"/>
+                    <TextBlock Text="▲" FontSize="7" Foreground="{DynamicResource BadgeForegroundBrush}"/>
                 </Border>
                 <Border x:Name="ScrollDownIndicator"
                         Grid.Row="0"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
-                        Margin="0,0,0,2"
-                        Background="#B3000000"
-                        CornerRadius="8"
+                        Margin="0,0,0,1"
+                        Background="{DynamicResource BadgeBackgroundBrush}"
+                        CornerRadius="{StaticResource RadiusPill}"
                         Padding="5,1"
                         IsHitTestVisible="False"
                         Visibility="Collapsed">
-                    <TextBlock Text="▼" FontSize="8" Foreground="White"/>
+                    <TextBlock Text="▼" FontSize="7" Foreground="{DynamicResource BadgeForegroundBrush}"/>
                 </Border>
 
-                <!-- Ações fixas: sempre visíveis abaixo das abas (não somem com muitas notas) -->
+                <!-- Ações: separadas do conteúdo por um fio, com UMA primária -->
                 <StackPanel Grid.Row="1" Orientation="Vertical">
 
+                    <Border Height="1"
+                            Background="{DynamicResource DividerBrush}"
+                            Margin="6,8,6,8"/>
+
                     <Button Command="{Binding CreateNoteCommand}"
-                            Style="{StaticResource DeckActionButtonStyle}"
-                            Width="52" MinHeight="34"
-                            Margin="0,8,0,0"
-                            ToolTip="Nova nota">
+                            Style="{StaticResource PrimaryActionButtonStyle}"
+                            Width="52" Height="34"
+                            Padding="0"
+                            ToolTip="Nova nota"
+                            AutomationProperties.Name="Nova nota">
                         <TextBlock Text="+"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   FontSize="16"
-                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextOnInkBrush}"
+                                   FontSize="17"
+                                   FontWeight="Medium"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Button>
 
                     <Button Command="{Binding OpenAllNotesCommand}"
                             Style="{StaticResource DeckActionButtonStyle}"
-                            Width="52" MinHeight="34"
-                            Margin="0,3,0,0"
-                            ToolTip="Todas as notas">
+                            Width="52" Height="32"
+                            Margin="0,4,0,0"
+                            ToolTip="Todas as notas"
+                            AutomationProperties.Name="Todas as notas">
                         <TextBlock Text="▤"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontSize="13"
@@ -203,9 +244,10 @@
 
                     <Button Command="{Binding OpenSettingsCommand}"
                             Style="{StaticResource DeckActionButtonStyle}"
-                            Width="52" MinHeight="34"
-                            Margin="0,3,0,0"
-                            ToolTip="Configurações">
+                            Width="52" Height="32"
+                            Margin="0,2,0,0"
+                            ToolTip="Configurações"
+                            AutomationProperties.Name="Configurações">
                         <TextBlock Text="⚙"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontSize="13"
@@ -215,13 +257,13 @@
 
                     <Button Command="{Binding ExitCommand}"
                             Style="{StaticResource DeckActionButtonStyle}"
-                            Width="52" MinHeight="34"
-                            Margin="0,8,0,0"
-                            ToolTip="Sair do StickyNotes">
+                            Width="52" Height="32"
+                            Margin="0,2,0,4"
+                            ToolTip="Sair do StickyNotes"
+                            AutomationProperties.Name="Sair do StickyNotes">
                         <TextBlock Text="✕"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   FontSize="13"
-                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="11"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Button>

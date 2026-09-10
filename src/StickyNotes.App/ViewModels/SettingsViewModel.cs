@@ -133,6 +133,11 @@ public class SettingsViewModel : ViewModelBase
     /// <summary>Monitores disponíveis (o deck pode ser encostado em qualquer um).</summary>
     public IReadOnlyList<MonitorInfo> Monitors { get; }
 
+    /// <summary>Versão do binário exibida nas configurações: um bug report sem versão
+    /// não pode ser correlacionado com o release instalado.</summary>
+    public string AppVersion { get; } =
+        $"v{typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "?"}";
+
     /// <summary>Verdadeiro quando há mais de um monitor (a seleção só faz sentido aí).</summary>
     public bool HasMultipleMonitors => Monitors.Count > 1;
 

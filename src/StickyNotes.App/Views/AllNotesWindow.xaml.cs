@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using StickyNotes.Data;
 using StickyNotes.Models;
 using StickyNotes.Services;
@@ -42,6 +43,15 @@ public partial class AllNotesWindow : Window
 
         Closed += (_, _) => _viewModel.Dispose();
         StateChanged += OnStateChanged;
+        Loaded += OnLoaded;
+    }
+
+    /// <summary>Adia a carga para depois do primeiro frame. Buscar todas as notas
+    /// decripta os corpos de uma vez; feito antes, a janela só aparecia depois
+    /// desse trabalho. Agora o mural abre na hora e as notas entram em seguida.</summary>
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, _viewModel.Load);
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -111,6 +121,23 @@ public partial class AllNotesWindow : Window
         }
     }
 
+    /// <summary>Abre a nota destacada com Enter. O cartão em si é um Border com
+    /// clique de mouse — sem isto o mural só funcionava com mouse. O ListBox já
+    /// dá foco por Tab e navegação por setas; faltava o Enter ativar.</summary>
+    private void OnWallKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        if (NotesWall.SelectedItem is Note note)
+        {
+            _viewModel.OpenNoteCommand.Execute(note);
+            e.Handled = true;
+        }
+    }
+
     /// <summary>Conjunto de notas que já receberam a animação de entrada — re-renders
     /// (busca/filtro) não re-animam post-its existentes, só os novos. Teto alto o
     /// suficiente para nunca re-animar em uso normal (limpo quando estoura).</summary>
@@ -128,10 +155,18 @@ public partial class AllNotesWindow : Window
 
         // Apenas a primeira renderização de cada nota anima; refiltros do mural
         // recriam os containers e não devem repetir a animação (custo de layout).
-        if (el.DataContext is Note note && !_animatedNoteIds.Add(note.Id))
+        if (el.DataContext is Note note)
         {
-            el.Opacity = 1;
-            return;
+            if (_animatedNoteIds.Count >= MaxAnimatedNoteIds)
+            {
+                _animatedNoteIds.Clear();
+            }
+
+            if (!_animatedNoteIds.Add(note.Id))
+            {
+                el.Opacity = 1;
+                return;
+            }
         }
 
         int index = 0;
